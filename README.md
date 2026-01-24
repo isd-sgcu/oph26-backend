@@ -76,15 +76,14 @@ erDiagram
 
     MyPieces {
         string id PK "not null, UUID"
-        %%ควรเป็นอันที่เอาไปส่งให้คนอื่น
         string user_id FK "not null"
-        string piece_code UK "not null"
+        string piece_code UK "not null, shorter unique code to send to user"
         datetime expire_date "not null"
     }
 
     CollectedPieces {
         string user_id UK, FK, PK "not null"
-        string piece_id UK, FK, PK "not null"
+        string piece_id UK, FK, PK "not null, uuid of piece"
         datetime collected_at "not null"
     }
 
@@ -93,7 +92,7 @@ erDiagram
         int[20] count "not null, default 0, array of pieces count per faculty"
     }
 
-    %% Leaderboards is this user_id top1% of any of this faculty
+    %% Leaderboards store of this user_id is top1% of which the faculties at the updated time
     Leaderboards {
         string user_id UK,FK,PK "not null, user id"
         bool[20] is_top "not null, default false, array of top1% status per faculty"
