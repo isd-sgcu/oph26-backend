@@ -13,7 +13,7 @@ erDiagram
     Attendees    ||--||  Users: attendee_accounts
     Staffs       |o--o|  Users: staff_accounts
     Attendees    |o--o{  CollectedPieces : collected_pieces
-    MyPieces     ||--||  Attendees: user_pices
+    MyPieces     ||--||  Attendees: user_pieces
     Leaderboards ||--||  Attendees: top_scorers
     Scores       }|--||  Attendees: score
     Attendees    }|--||  Staffs: checkin_staff
@@ -51,12 +51,12 @@ erDiagram
         string my_piece_id FK "nullable, uuid"
         string certificate_name "nullable"
         %% checkedin
-        datetime checkined_at "nullable"
+        datetime checked_in_at "nullable"
         string checkin_staff_id FK "nullable"
         %% workshops
         string[] favorite_workshops "nullable, array of id of attendee's favorite workshops"
         %% certificate
-        string certificate_name "nullable"
+
     }
 
     Staffs {
@@ -102,6 +102,6 @@ erDiagram
     Questionnaire {
         string user_id UK, FK "not null"
         json_text answers "not null"
-        datedtime created_at "not null"
+        datetime created_at "not null"
     }
 ```
