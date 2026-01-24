@@ -1,16 +1,16 @@
-package env
+package config
 
 import (
 	"os"
 )
 
 type Config struct {
-	Port string
+	DataBaseURL string
 }
 
-func Load() *Config {
+func LoadEnv() *Config {
 	return &Config {
-		Port: getEnv("PORT", "8080"),
+		DataBaseURL: getEnv("DATABASE_URL", ""),
 	}
 }
 

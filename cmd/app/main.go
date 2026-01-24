@@ -1,7 +1,7 @@
 package main
 
 import (
-	env "oph26-backend/internal/config"
+	"oph26-backend/internal/config"
 	"oph26-backend/internal/initializer"
 	"oph26-backend/internal/route"
 
@@ -13,8 +13,8 @@ func init() {
 }
 
 func main() {
-	cfg := env.Load()
-	println("Running on Port: " + cfg.Port)
+	cfg := config.LoadEnv()
+	config.InitDB(cfg)
 
 	r := fiber.New()
 
