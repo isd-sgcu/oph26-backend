@@ -87,11 +87,11 @@ erDiagram
         string province "not null"
         string study_level "nullable, for Student type (Matthayom/Prathom)"
         string school_name "nullable, for Student type (Matthayom/Prathom)"
-        string[] news_sources_selected "nullable, array of selected value"
+        string[] news_sources_selected "nullable, array of selected values"
         string news_sources_other "nullable, conditional other"
         string initial_first_interested_faculty "not null"
         string[] interested_faculty "not null, array of interested faculty"
-        string[] objective_selected "nullable, array of selected value"
+        string[] objective_selected "nullable, array of selected values"
         string objective_other "nullable, conditional other"
         string(7) ticket_code UK "not null,<br/>C000000, prefix consult docs"
         datetime created_at "not null"
@@ -140,7 +140,8 @@ erDiagram
         int[20] count "not null, default 0, array of pieces count per faculty"
     }
 
-    %% Leaderboards store of this user_id is top1% of which the faculties at the updated time
+
+    %% Each row in Leaderboards records, for a given user_id, in which faculties the user is in the top 1% at the given updated_at time.
     Leaderboards {
         string user_id UK,FK,PK "not null, user id"
         bool[20] is_top "not null, default false, array of top1% status per faculty"
