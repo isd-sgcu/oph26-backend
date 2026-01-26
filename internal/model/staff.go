@@ -1,12 +1,24 @@
 package model
 
+import (
+	"time"
+
+	"github.com/google/uuid"
+)
+
 type Staff struct {
-	ID        string `gorm:"type:uuid;default:gen_random_uuid();primaryKey" json:"id"`
-	FirstName string `gorm:"type:varchar(100);not null" json:"first_name"`
-	LastName  string `gorm:"type:varchar(100);not null" json:"last_name"`
-	Nickname  string `gorm:"type:varchar(100)" json:"nickname"`
-	TelNumber string `gorm:"type:varchar(15);not null" json:"tel_number"`
-	Faculty   string `gorm:"type:varchar(100);not null" json:"faculty"`
-	Email     string `gorm:"type:varchar(100);not null;unique" json:"email"`
-	Year      int    `gorm:"not null" json:"year"`
+	ID     uuid.UUID `gorm:"type:uuid;default:uuid_generate_v4();primaryKey"`
+	UserID uuid.UUID `gorm:"type:uuid;not null;uniqueIndex"`
+	// CUID is a unique identifier for student and staff members in Chula
+	CUID      string    `gorm:"type:varchar(100);not null;uniqueIndex"`
+	FirstName string    `gorm:"type:varchar(100);not null"`
+	LastName  string    `gorm:"type:varchar(100);not null"`
+	Nickname  string    `gorm:"type:varchar(100)"`
+	Phone     string    `gorm:"type:varchar(20)"`
+	Year      string    `gorm:"type:varchar(10)"`
+	Email     string    `gorm:"type:varchar(100);not null;uniqueIndex"`
+	Faculty   string    `gorm:"type:varchar(100)"`
+	// These are managed by GORM
+	CreatedAt time.Time
+	UpdatedAt time.Time
 }
