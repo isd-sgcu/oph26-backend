@@ -1,8 +1,57 @@
 # oph26-backend
-Backend repository for Chula Openhouse 2026 website and services.
 
 ## Architecture Overview
 This backend is built using [Go](https://go.dev/) and [Fiber](https://gofiber.io/) web framework, with [GORM](https://gorm.io/) as the ORM for database interactions. Please refer to the [Golang Clean Architecture](https://github.com/khannedy/golang-clean-architecture) for more details on the architectural patterns used.
+
+---
+
+## 🔒 Branch Rules for Main
+
+The `main` branch is protected with the following rules:
+
+1. **Require a pull request before merging**
+
+   - Direct pushes to `main` are blocked.
+   - All changes must be submitted via pull request (PR).
+
+2. **Require branches to be up to date before merging**
+
+   - The PR branch must be rebased or merged with the latest `main` before merging.
+
+3. **No bypass allowed**
+   - These rules apply to everyone, including administrators.
+
+These rules ensure `main` always contains production-ready, tested, and reviewed code.
+
+---
+
+## 🏷 Branch Naming Scheme
+
+Follow this format:
+
+```
+<name>/<type>/<short-description>
+```
+
+### Example:
+
+```
+arka/feat/resume-button
+```
+
+### Types:
+
+- **feat/** – New features (e.g., `jay/feat/add-appointment-page`)
+- **fix/** – Bug fixes (e.g., `alex/fix/responsive-layout`)
+- **chore/** – Maintenance tasks, dependency updates, config changes (e.g., `sam/chore/update-tailwind-config`)
+- **refactor/** – Code refactoring without changing functionality (e.g., `lee/refactor/dashboard-layout`)
+- **remove/** – Removing unused code, dependencies, or features (e.g., `jay/remove/prisma`)
+
+### More Examples:
+
+- `mike/feat/user-profile`
+- `anna/refactor/api-service`
+- `jay/remove/old-api-endpoints`
 
 
 ## Database ER Diagram
