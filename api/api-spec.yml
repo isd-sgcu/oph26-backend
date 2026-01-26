@@ -1,13 +1,15 @@
 openapi: "3.0.3"
 info:
-  title: Chula Openhouse 2026 API
+  title: "[ยังไม่เส้ดอย่าเพิ่งดู] Chula Openhouse 2026 API"
   version: "1.0"
+  description: "**(ยังไม่เส้ดอย่าเพิ่งดู)** API สำหรับระบบหลังบ้านของงาน Chula Openhouse 2026"
 servers:
   - url: http://api.chulaopenhouse.local/api
 paths:
   /test:
     get:
       summary: Test Endpoint
+      description: A simple test endpoint to verify the API is working.
       tags:
         - Test
       responses:
@@ -17,6 +19,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/TestResponse"
+              example:
+                ok: true
   /auth/token:
     get:
       summary: Get user tokens
@@ -29,6 +33,8 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/TokensRequest"
+            example:
+              idToken: "eyJhbGciOi...asdasoxpoczx"
       responses:
         "200":
           description: Login สำเร็จ และได้รับ Access Token
@@ -42,8 +48,25 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/TokensResponse"
+              example:
+                accessToken: "eyJhbGciOi...asdasoxpoczx"
+                refreshToken: "abc123xyz"
         "401":
           description: Token ของ Google ไม่ถูกต้องหรือหมดอายุ
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: "Invalid or expired Google ID token"
+        "500":
+          description: เกิดข้อผิดพลาดภายในเซิร์ฟเวอร์
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: "Internal server error"
   /auth/refresh:
     post:
       summary: แลก Access Token ชุดใหม่ (Refresh Token)
@@ -59,6 +82,20 @@ paths:
                 $ref: "#/components/schemas/TokensResponse"
         "401":
           description: Refresh Token ไม่ถูกต้อง หรือถูก Revoke ไปแล้ว
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: "Invalid or revoked refresh token"
+        "500":
+          description: เกิดข้อผิดพลาดภายในเซิร์ฟเวอร์
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: "Internal server error"
   /auth/signOut:
     post:
       summary: ออกจากระบบ
@@ -69,7 +106,29 @@ paths:
         - bearerAuth: []
       responses:
         "204":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+              example:
+                ok: true
           description: Logout สำเร็จ และ Cookie ถูกล้าง
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: "Unauthorized access"
+        "500":
+          description: เกิดข้อผิดพลาดภายในเซิร์ฟเวอร์
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: "Internal server error"
   /auth/me:
     get:
       summary: ข้อมูลผู้ใช้ปัจจุบัน
@@ -85,8 +144,30 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/User"
+              example:
+                id: "uuuu-bbbb-cccc-dddd"
+                email: "example@example.com"
+                role: "attendee"
+                attendeeId: "aaaa-1111-bbbb-2222"
+                staffId: null
+                createdAt: "2024-01-01T12:00:00Z"
+                updatedAt: "2024-01-10T12:00:00Z"
         "401":
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: "Unauthorized access"
+        "500":
+          description: เกิดข้อผิดพลาดภายในเซิร์ฟเวอร์
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: "Internal server error"
   /attendees:
     post:
       tags:
@@ -95,7 +176,31 @@ paths:
         - bearerAuth: []
       responses:
         "200":
-          description: Created
+          description: New attendee created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Attendee"
+              example:
+                id: "aaaa-1111-bbbb-2222"
+                name: "John Doe"
+                email: "
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+                example:
+                  error: "Unauthorized access"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+                example:
+                  error: "Insufficient permissions"
         "400":
           description: Bad Request
   /attendees/{attendeeId}:
@@ -255,6 +360,18 @@ components:
           type: string
           format: date-time
           title: วันที่แก้ไขบัญชีผู้ใช้ล่าสุด
+    SuccessResponse:
+      type: object
+      properties:
+        ok:
+          type: boolean
+          default: true
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          example: "Invalid attendee data"
 security:
   - bearerAuth: []
 tags:
