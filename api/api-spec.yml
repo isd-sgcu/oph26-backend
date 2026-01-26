@@ -1,0 +1,382 @@
+openapi: "3.0.3"
+info:
+  title: "[ยังไม่เส้ดอย่าเพิ่งดู] Chula Openhouse 2026 API"
+  version: "1.0"
+  description: "**(ยังไม่เส้ดอย่าเพิ่งดู)** API สำหรับระบบหลังบ้านของงาน Chula Openhouse 2026"
+servers:
+  - url: http://api.chulaopenhouse.local/api
+paths:
+  /test:
+    get:
+      summary: Test Endpoint
+      description: A simple test endpoint to verify the API is working.
+      tags:
+        - Test
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TestResponse"
+              example:
+                ok: true
+  /auth/token:
+    get:
+      summary: Get user tokens
+      description: Retrieve a new access token and refresh token using Google `idToken`.
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TokensRequest"
+            example:
+              idToken: "eyJhbGciOi...asdasoxpoczx"
+      responses:
+        "200":
+          description: Login สำเร็จ และได้รับ Access Token
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+                example: refresh_token=abc123xyz; HttpOnly; Secure; SameSite=Strict; Max-Age=2592000
+              description: เก็บ Refresh Token ไว้ใน HttpOnly Cookie
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TokensResponse"
+              example:
+                accessToken: "eyJhbGciOi...asdasoxpoczx"
+                refreshToken: "abc123xyz"
+        "401":
+          description: Token ของ Google ไม่ถูกต้องหรือหมดอายุ
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: "Invalid or expired Google ID token"
+        "500":
+          description: เกิดข้อผิดพลาดภายในเซิร์ฟเวอร์
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: "Internal server error"
+  /auth/refresh:
+    post:
+      summary: แลก Access Token ชุดใหม่ (Refresh Token)
+      description: ใช้ Refresh Token ใน Cookie เพื่อสร้าง Access Token (JWT) ชุดใหม่
+      tags:
+        - Authentication
+      responses:
+        "200":
+          description: ต่ออายุสำเร็จ
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TokensResponse"
+        "401":
+          description: Refresh Token ไม่ถูกต้อง หรือถูก Revoke ไปแล้ว
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: "Invalid or revoked refresh token"
+        "500":
+          description: เกิดข้อผิดพลาดภายในเซิร์ฟเวอร์
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: "Internal server error"
+  /auth/signOut:
+    post:
+      summary: ออกจากระบบ
+      description: ลบ Refresh Token ใน Database และล้าง Cookie
+      tags:
+        - Authentication
+      security:
+        - bearerAuth: []
+      responses:
+        "204":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+              example:
+                ok: true
+          description: Logout สำเร็จ และ Cookie ถูกล้าง
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: "Unauthorized access"
+        "500":
+          description: เกิดข้อผิดพลาดภายในเซิร์ฟเวอร์
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: "Internal server error"
+  /auth/me:
+    get:
+      summary: ข้อมูลผู้ใช้ปัจจุบัน
+      description: ดึงข้อมูลผู้ใช้ที่ล็อกอินอยู่ปัจจุบัน
+      security:
+        - bearerAuth: []
+      tags:
+        - Authentication
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+              example:
+                id: "uuuu-bbbb-cccc-dddd"
+                email: "example@example.com"
+                role: "attendee"
+                attendeeId: "aaaa-1111-bbbb-2222"
+                staffId: null
+                createdAt: "2024-01-01T12:00:00Z"
+                updatedAt: "2024-01-10T12:00:00Z"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: "Unauthorized access"
+        "500":
+          description: เกิดข้อผิดพลาดภายในเซิร์ฟเวอร์
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: "Internal server error"
+  /attendees:
+    post:
+      tags:
+        - Attendees
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: New attendee created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Attendee"
+              example:
+                id: "aaaa-1111-bbbb-2222"
+                name: "John Doe"
+                email: "
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+                example:
+                  error: "Unauthorized access"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+                example:
+                  error: "Insufficient permissions"
+        "400":
+          description: Bad Request
+  /attendees/{attendeeId}:
+    get:
+      tags:
+        - Attendees
+      responses:
+        "200":
+          description: OK
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "404":
+          description: Not Found
+        "500":
+          description: Internal Server Error
+  /attendees/me:
+    get:
+      tags:
+        - Attendees
+      responses:
+        "200":
+          description: OK
+    put:
+      tags:
+        - Attendees
+      responses:
+        "200":
+          description: Updated
+        "400":
+          description: Bad Request
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "404":
+          description: Not Found
+  /pieces/me:
+    get:
+      tags:
+        - Pieces
+      responses:
+        "200":
+          description: OK
+  /pieces/collected:
+    get:
+      tags:
+        - Pieces
+      responses:
+        "200":
+          description: OK
+  /checkin:
+    post:
+      tags:
+        - Checkin
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "404":
+          description: Not Found
+        "500":
+          description: Internal Server Error
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    TestResponse:
+      type: object
+      properties:
+        ok:
+          type: boolean
+          default: true
+    TokensRequest:
+      type: object
+      properties:
+        idToken:
+          type: string
+    TokensResponse:
+      type: object
+      properties:
+        accessToken:
+          type: string
+        refreshToken:
+          type: string
+    AccessTokenRequest:
+      type: object
+      properties:
+        refreshToken:
+          type: string
+    AccessTokenResponse:
+      type: object
+      properties:
+        accessToken:
+          type: string
+    RefreshTokenResponse:
+      type: object
+      properties:
+        refreshToken:
+          type: string
+    Attendee:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        email:
+          type: string
+    Piece:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          title: User ID
+        email:
+          type: string
+          title: อีเมลผู้ใช้
+        role:
+          type: string
+          title: บทบาทผู้ใช้
+          description: ได้แก่ "attendee" หรือ "staff"
+        attendeeId:
+          type: string
+          title: Attendee ID
+          description: ID ของผู้เข้าร่วมงานที่เชื่อมโยงกับผู้ใช้
+          nullable: true
+        staffId:
+          type: string
+          title: Staff ID
+          description: ID ของสตาฟที่เชื่อมโยงกับผู้ใช้
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+          title: วันที่สร้างบัญชีผู้ใช้
+        updatedAt:
+          type: string
+          format: date-time
+          title: วันที่แก้ไขบัญชีผู้ใช้ล่าสุด
+    SuccessResponse:
+      type: object
+      properties:
+        ok:
+          type: boolean
+          default: true
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          example: "Invalid attendee data"
+security:
+  - bearerAuth: []
+tags:
+  - name: Test
+  - name: Authentication
+  - name: Attendees
+  - name: Pieces
+  - name: Checkin

@@ -1,8 +1,57 @@
 # oph26-backend
-Backend repository for Chula Openhouse 2026 website and services.
 
 ## Architecture Overview
 This backend is built using [Go](https://go.dev/) and [Fiber](https://gofiber.io/) web framework, with [GORM](https://gorm.io/) as the ORM for database interactions. Please refer to the [Golang Clean Architecture](https://github.com/khannedy/golang-clean-architecture) for more details on the architectural patterns used.
+
+---
+
+## 🔒 Branch Rules for Main
+
+The `main` branch is protected with the following rules:
+
+1. **Require a pull request before merging**
+
+   - Direct pushes to `main` are blocked.
+   - All changes must be submitted via pull request (PR).
+
+2. **Require branches to be up to date before merging**
+
+   - The PR branch must be rebased or merged with the latest `main` before merging.
+
+3. **No bypass allowed**
+   - These rules apply to everyone, including administrators.
+
+These rules ensure `main` always contains production-ready, tested, and reviewed code.
+
+---
+
+## 🏷 Branch Naming Scheme
+
+Follow this format:
+
+```
+<name>/<type>/<short-description>
+```
+
+### Example:
+
+```
+arka/feat/resume-button
+```
+
+### Types:
+
+- **feat/** – New features (e.g., `jay/feat/add-appointment-page`)
+- **fix/** – Bug fixes (e.g., `alex/fix/responsive-layout`)
+- **chore/** – Maintenance tasks, dependency updates, config changes (e.g., `sam/chore/update-tailwind-config`)
+- **refactor/** – Code refactoring without changing functionality (e.g., `lee/refactor/dashboard-layout`)
+- **remove/** – Removing unused code, dependencies, or features (e.g., `jay/remove/prisma`)
+
+### More Examples:
+
+- `mike/feat/user-profile`
+- `anna/refactor/api-service`
+- `jay/remove/old-api-endpoints`
 
 
 ## Database ER Diagram
@@ -38,11 +87,11 @@ erDiagram
         string province "not null"
         string study_level "nullable, for Student type (Matthayom/Prathom)"
         string school_name "nullable, for Student type (Matthayom/Prathom)"
-        string[] news_sources_selected "nullable, array of selected value"
+        string[] news_sources_selected "nullable, array of selected values"
         string news_sources_other "nullable, conditional other"
         string initial_first_interested_faculty "not null"
         string[] interested_faculty "not null, array of interested faculty"
-        string[] objective_selected "nullable, array of selected value"
+        string[] objective_selected "nullable, array of selected values"
         string objective_other "nullable, conditional other"
         string(7) ticket_code UK "not null,<br/>C000000, prefix consult docs"
         datetime created_at "not null"
@@ -91,7 +140,8 @@ erDiagram
         int[20] count "not null, default 0, array of pieces count per faculty"
     }
 
-    %% Leaderboards store of this user_id is top1% of which the faculties at the updated time
+
+    %% Each row in Leaderboards records, for a given user_id, in which faculties the user is in the top 1% at the given updated_at time.
     Leaderboards {
         string user_id UK,FK,PK "not null, user id"
         bool[20] is_top "not null, default false, array of top1% status per faculty"
