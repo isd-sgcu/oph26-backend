@@ -9,7 +9,7 @@ type Config struct {
 }
 
 func LoadEnv() *Config {
-	return &Config {
+	return &Config{
 		DataBaseURL: getEnv("DATABASE_URL", ""),
 	}
 }
