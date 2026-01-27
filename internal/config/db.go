@@ -18,7 +18,7 @@ func InitDB(cfg *Config) {
 		fmt.Println("Failed to connect to database:", err)
 		return
 	}
-	err = DB.AutoMigrate(&model.Staff{})
+	err = DB.AutoMigrate(&model.User{})
 	if err != nil {
 		fmt.Println("Failed to migrate database:", err)
 		return
