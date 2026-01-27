@@ -10,8 +10,9 @@ import (
 )
 
 type Leaderboard struct {
-	UserID    uuid.UUID    `gorm:"type:uuid;not null;unique;primaryKey"`
-	IsTop     pq.BoolArray `gorm:"type:bool[];not null;default:'{false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false}'"`
+	UserID    uuid.UUID `gorm:"type:uuid;not null;unique;primaryKey"`
+	User      User
+	IsTop     pq.BoolArray `gorm:"type:bool[];not null;default:array_fill(false, ARRAY[20])"`
 	UpdatedAt time.Time
 }
 
