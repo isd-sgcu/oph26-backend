@@ -12,6 +12,7 @@ type User struct {
 	Role       string      `gorm:"not null"`
 	AttendeeId *uuid.UUIDs `gorm:"type:uuid"`
 	StaffId    *uuid.UUIDs `gorm:"type:uuid"`
+	Score      Score
 	CreatedAt  time.Time
 	UpdatedAt  time.Time
 }
