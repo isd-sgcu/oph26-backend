@@ -18,6 +18,12 @@ func InitDB(cfg *Config) {
 		fmt.Println("Failed to connect to database:", err)
 		return
 	}
+	// Enable uuid-ossp extension for UUID generation
+	err = DB.Exec("CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\";").Error
+	if err != nil {
+		fmt.Println("Failed to create uuid-ossp extension:", err)
+		return
+	}
 	err = DB.AutoMigrate(&model.User{})
 	if err != nil {
 		fmt.Println("Failed to migrate database:", err)
