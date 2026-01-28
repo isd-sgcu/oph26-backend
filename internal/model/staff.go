@@ -17,8 +17,7 @@ type Staff struct {
 	Year      string     `gorm:"type:text;not null"`
 	Email     string     `gorm:"type:text;uniqueIndex;not null"`
 	Faculty   string     `gorm:"type:text;not null"`
-	CreatedAt time.Time  `gorm:"type:timestamptz;default:CURRENT_TIMESTAMP;not null"`
-	UpdatedAt time.Time  `gorm:"type:timestamptz;default:CURRENT_TIMESTAMP;not null"`
-
+	CreatedAt time.Time
+	UpdatedAt time.Time
 	User User `gorm:"foreignKey:UserID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL"`
 }
