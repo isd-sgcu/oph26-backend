@@ -9,7 +9,6 @@ import (
 )
 
 type Score struct {
-	// auto fk because field name convention + we declare Score field in User
 	UserID uuid.UUID `gorm:"type:uuid;not null;unique;primaryKey"`
 	User   User
 	Count  pq.Int32Array `gorm:"type:int[];not null;default:array_fill(0, ARRAY[20])"`
