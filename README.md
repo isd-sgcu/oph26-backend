@@ -103,8 +103,6 @@ erDiagram
         string checkin_staff_id FK "nullable"
         %% workshops
         string[] favorite_workshops "nullable, array of id of attendee's favorite workshops"
-        %% certificate
-
     }
 
     Staffs {

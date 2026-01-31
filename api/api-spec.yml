@@ -1,382 +1,1466 @@
-openapi: "3.0.3"
+openapi: 3.1.0
 info:
-  title: "[ยังไม่เส้ดอย่าเพิ่งดู] Chula Openhouse 2026 API"
+  contact:
+    name: Discord Channel for General discussion
+    url: https://discord.com/channels/1149008426261823590/1459078636534763704
+  license:
+    name: MIT License
+    url: https://opensource.org/licenses/MIT
+  summary: >-
+    API สำหรับระบบหลังบ้านของงาน Chula Openhouse
+    2026
+  title: "Chula Openhouse 2026 API"
   version: "1.0"
-  description: "**(ยังไม่เส้ดอย่าเพิ่งดู)** API สำหรับระบบหลังบ้านของงาน Chula Openhouse 2026"
 servers:
-  - url: http://api.chulaopenhouse.local/api
+  - description: Production server
+    url: https://api.chulaopenhouse.com/api
+externalDocs:
+  description: "`oph26-resource` Discord Channel for documentations"
+  url: https://discord.com/channels/1149008426261823590/1459079187687145502
 paths:
-  /test:
-    get:
-      summary: Test Endpoint
-      description: A simple test endpoint to verify the API is working.
-      tags:
-        - Test
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/TestResponse"
-              example:
-                ok: true
-  /auth/token:
-    get:
-      summary: Get user tokens
-      description: Retrieve a new access token and refresh token using Google `idToken`.
-      tags:
-        - Authentication
+  /attendees:
+    post:
+      description: >-
+        สร้างผู้เข้าร่วมงานใหม่โดยตัวผู้เข้าร่วมงานเอง (Self-Registration)
+        เฉพาะผู้ใช้ที่ไม่ใช่สตาฟเท่านั้น
       requestBody:
-        required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/TokensRequest"
-            example:
-              idToken: "eyJhbGciOi...asdasoxpoczx"
+              $ref: "#/components/schemas/AttendeeCreateRequest"
       responses:
         "200":
-          description: Login สำเร็จ และได้รับ Access Token
-          headers:
-            Set-Cookie:
-              schema:
-                type: string
-                example: refresh_token=abc123xyz; HttpOnly; Secure; SameSite=Strict; Max-Age=2592000
-              description: เก็บ Refresh Token ไว้ใน HttpOnly Cookie
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/TokensResponse"
-              example:
-                accessToken: "eyJhbGciOi...asdasoxpoczx"
-                refreshToken: "abc123xyz"
+                $ref: "#/components/schemas/SuccessResponse"
+          description: New attendee created successfully
+        "400":
+          description: Bad Request, invalid input data
         "401":
-          description: Token ของ Google ไม่ถูกต้องหรือหมดอายุ
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-              example:
-                error: "Invalid or expired Google ID token"
-        "500":
-          description: เกิดข้อผิดพลาดภายในเซิร์ฟเวอร์
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-              example:
-                error: "Internal server error"
-  /auth/refresh:
-    post:
-      summary: แลก Access Token ชุดใหม่ (Refresh Token)
-      description: ใช้ Refresh Token ใน Cookie เพื่อสร้าง Access Token (JWT) ชุดใหม่
-      tags:
-        - Authentication
-      responses:
-        "200":
-          description: ต่ออายุสำเร็จ
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/TokensResponse"
-        "401":
-          description: Refresh Token ไม่ถูกต้อง หรือถูก Revoke ไปแล้ว
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-              example:
-                error: "Invalid or revoked refresh token"
-        "500":
-          description: เกิดข้อผิดพลาดภายในเซิร์ฟเวอร์
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-              example:
-                error: "Internal server error"
-  /auth/signOut:
-    post:
-      summary: ออกจากระบบ
-      description: ลบ Refresh Token ใน Database และล้าง Cookie
-      tags:
-        - Authentication
+          $ref: "#/components/responses/UnauthorizedResponse"
+        "403":
+          $ref: "#/components/responses/ForbiddenResponse"
       security:
         - bearerAuth: []
+      summary: สร้างผู้เข้าร่วมงานใหม่
+      tags:
+        - Attendees
+  /attendees/me:
+    get:
+      summary: ดึงข้อมูลผู้เข้าร่วมงานของผู้ใช้ปัจจุบัน
+      description: ดึงข้อมูลผู้เข้าร่วมงานของผู้ใช้ที่ล็อกอินอยู่ปัจจุบัน
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Attendee"
+          description: OK
+        "401":
+          $ref: "#/components/responses/UnauthorizedResponse"
+        "403":
+          content:
+            application/json:
+              examples:
+                StaffAccountForbiddenExample:
+                  description: >-
+                    ตัวอย่างการตอบกลับเมื่อสตาฟพยายามเข้าถึงข้อมูลการเข้าร่วมงานของตัวเอง
+                  summary: Staff Account Forbidden Example
+                  value:
+                    error: Forbidden, staff accounts cannot access attendee data
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: >-
+            Forbidden, user does not have permission to access their attendee
+            data (might be a staff account)
+        "404":
+          content:
+            application/json:
+              examples:
+                AttendeeNotCreatedYet:
+                  description: >-
+                    ตัวอย่างการตอบกลับเมื่อผู้ใช้ที่ล็อกอินยังไม่มีข้อมูลผู้เข้าร่วมงาน
+                  summary: Attendee Not Created Yet Example
+                  value:
+                    error: Attendee data not found for the current user
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: Not Found, attendee data for the current user does not exist
+        "500":
+          $ref: "#/components/responses/InternalServerErrorResponse"
+      security:
+        - bearerAuth: []
+      tags:
+        - Attendees
+    put:
+      description: >-
+        อัปเดตข้อมูลผู้เข้าร่วมงานของผู้ใช้ที่ล็อกอินอยู่ปัจจุบัน
+        (สตาฟไม่สามารถใช้ได้)
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AttendeeUpdateRequest"
+      responses:
+        "200":
+          content:
+            application/json:
+              example:
+                ok: true
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+          description: Updated
+        "400":
+          content:
+            application/json:
+              example:
+                error: ไม่รู้ เดี๋ยว validator ส่งให้แหละ
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: Bad Request, invalid input data
+        "401":
+          $ref: "#/components/responses/UnauthorizedResponse"
+        "403":
+          content:
+            application/json:
+              examples:
+                StaffAccountForbiddenExample:
+                  description: >-
+                    ตัวอย่างการตอบกลับเมื่อสตาฟพยายามอัปเดตข้อมูลการเข้าร่วมงานของตัวเอง
+                  summary: Staff Account Forbidden Example
+                  value:
+                    error: Forbidden, staff accounts cannot update attendee data
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: >-
+            Forbidden, user does not have permission to update their attendee
+            data (might be a staff account)
+        "404":
+          content:
+            application/json:
+              examples:
+                AttendeeNotCreatedYet:
+                  description: >-
+                    ตัวอย่างการตอบกลับเมื่อผู้ใช้ที่ล็อกอินยังไม่มีข้อมูลผู้เข้าร่วมงาน
+                  summary: Attendee Not Created Yet Example
+                  value:
+                    error: Attendee data not found for the current user
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: Not Found
+      summary: อัปเดตข้อมูลผู้เข้าร่วมงาน
+      tags:
+        - Attendees
+  /attendees/{attendeeId}:
+    get:
+      description: ดึงข้อมูลผู้เข้าร่วมงานตาม ID เฉพาะสตาฟ
+      parameters:
+        - in: path
+          name: attendeeId
+          required: true
+          schema:
+            description: ID ของผู้เข้าร่วมงาน
+            examples:
+              - value: 123e4567-e89b-12d3-a456-426614174000
+            format: uuid
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Attendee"
+                  - properties:
+                      checkin_staff:
+                        $ref: "#/components/schemas/Staff"
+                        description: ข้อมูลสตาฟที่ทำการเช็คอินให้ผู้เข้าร่วมงาน (ถ้ามี)
+                    type: object
+          description: OK
+        "401":
+          $ref: "#/components/responses/UnauthorizedResponse"
+        "403":
+          $ref: "#/components/responses/ForbiddenResponse"
+          description: Forbidden, user does not have permission to access this attendee
+        "404":
+          content:
+            application/json:
+              example:
+                error: Attendee not found
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: Not Found, attendee with the specified ID does not exist
+        "500":
+          $ref: "#/components/responses/InternalServerErrorResponse"
+      security:
+        - bearerAuth: []
+      tags:
+        - Attendees
+  /auth/me:
+    get:
+      description: ดึงข้อมูลผู้ใช้ที่ล็อกอินอยู่ปัจจุบัน
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+          description: OK
+        "401":
+          $ref: "#/components/responses/UnauthorizedResponse"
+        "500":
+          $ref: "#/components/responses/InternalServerErrorResponse"
+      security:
+        - bearerAuth: []
+      summary: ข้อมูลผู้ใช้ปัจจุบัน
+      tags:
+        - Authentication
+  /auth/refresh:
+    post:
+      description: ใช้ Refresh Token ใน Cookie เพื่อสร้าง Access Token (JWT) ชุดใหม่
+      parameters:
+        - in: cookie
+          name: Refresh-Token
+          required: true
+          schema:
+            description: >-
+              ต้องมี Cookie ที่ชื่อ `refresh_token` ซึ่งเก็บ Refresh Token ไว้
+              เช่น `refresh_token=abc123xyz`
+            examples:
+              - value: refresh_token=abc123xyz
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TokenResponse"
+          description: ต่ออายุสำเร็จ
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: Refresh Token ไม่ถูกต้อง หรือถูก Revoke ไปแล้ว
+        "500":
+          $ref: "#/components/responses/InternalServerErrorResponse"
+      security: []
+      summary: แลก Access Token ชุดใหม่ โดยใช้ Refresh Token
+      tags:
+        - Authentication
+  /auth/signOut:
+    post:
+      description: ลบ Refresh Token ใน Database และล้าง Cookie
       responses:
         "204":
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/SuccessResponse"
-              example:
-                ok: true
           description: Logout สำเร็จ และ Cookie ถูกล้าง
         "401":
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-              example:
-                error: "Unauthorized access"
+          $ref: "#/components/responses/UnauthorizedResponse"
         "500":
-          description: เกิดข้อผิดพลาดภายในเซิร์ฟเวอร์
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-              example:
-                error: "Internal server error"
-  /auth/me:
-    get:
-      summary: ข้อมูลผู้ใช้ปัจจุบัน
-      description: ดึงข้อมูลผู้ใช้ที่ล็อกอินอยู่ปัจจุบัน
+          $ref: "#/components/responses/InternalServerErrorResponse"
       security:
         - bearerAuth: []
+      summary: ออกจากระบบ
       tags:
         - Authentication
+  /auth/token:
+    post:
+      description: Retrieve a new access token and refresh token using Google `idToken`.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TokensRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TokenResponse"
+          description: >-
+            Login สำเร็จ และได้รับ Access Token และส่ง Header สำหรับใช้แลก
+            access token ใหม่ในอนาคต
+          headers:
+            Set-Cookie:
+              description: เก็บ Refresh Token ไว้ใน HttpOnly Cookie
+              schema:
+                examples:
+                  - >-
+                    refresh_token=abc123xyz; HttpOnly; Secure; SameSite=Strict;
+                    Max-Age=2592000
+                type: string
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: Token ของ Google ไม่ถูกต้องหรือหมดอายุ
+        "500":
+          $ref: "#/components/responses/InternalServerErrorResponse"
+      security: []
+      summary: Get user tokens
+      tags:
+        - Authentication
+  /checkin:
+    post:
+      summary: เช็คอินผู้เข้าร่วมงาน
+      description: เช็คอินผู้เข้าร่วมงานด้วยรหัสตั๋ว เฉพาะสตาฟเท่านั้น
+      security:
+        - bearerAuth: []
+      requestBody:
+        $ref: "#/components/requestBodies/CheckinAttendeeRequest"
       responses:
         "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/User"
-              example:
-                id: "uuuu-bbbb-cccc-dddd"
-                email: "example@example.com"
-                role: "attendee"
-                attendeeId: "aaaa-1111-bbbb-2222"
-                staffId: null
-                createdAt: "2024-01-01T12:00:00Z"
-                updatedAt: "2024-01-10T12:00:00Z"
+                allOf:
+                  - $ref: "#/components/schemas/SuccessResponse"
+                  - properties:
+                      attendee:
+                        $ref: "#/components/schemas/Attendee"
+                        description: ข้อมูลผู้เข้าร่วมงานที่ถูกเช็คอิน
+                    type: object
+        "400":
+          description: Bad Request
         "401":
-          description: Unauthorized
+          $ref: "#/components/responses/UnauthorizedResponse"
+        "403":
+          $ref: "#/components/responses/ForbiddenResponse"
+        "404":
+          description: Not Found
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
-              example:
-                error: "Unauthorized access"
+              examples:
+                AttendeeNotFoundExample:
+                  description: >-
+                    ตัวอย่างการตอบกลับเมื่อพยายามเช็คอินผู้เข้าร่วมงานที่ไม่มีอยู่
+                  summary: Attendee Not Found Example
+                  value:
+                    error: Attendee not found
+        "409":
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ErrorResponse"
+                  - properties:
+                      attendee:
+                        $ref: "#/components/schemas/AttendeeWithCheckinStaff"
+                        description: ข้อมูลผู้เข้าร่วมงานที่พยายามเช็คอินซ้ำ
         "500":
-          description: เกิดข้อผิดพลาดภายในเซิร์ฟเวอร์
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-              example:
-                error: "Internal server error"
-  /attendees:
-    post:
+          $ref: "#/components/responses/InternalServerErrorResponse"
       tags:
-        - Attendees
+        - Checkin
+  /stats/attendees:
+    get:
+      summary: สถิติผู้เข้าร่วมงาน
+      description: นับจำนวนผู้ลงทะเบียนทั้งหมด จำนวนผู้เช็คอิน และจำนวนความสนใจคณะ (เฉพาะสตาฟ)
       security:
         - bearerAuth: []
       responses:
         "200":
-          description: New attendee created successfully
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Attendee"
-              example:
-                id: "aaaa-1111-bbbb-2222"
-                name: "John Doe"
-                email: "
-        "401":
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-                example:
-                  error: "Unauthorized access"
-        "403":
-          description: Forbidden
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-                example:
-                  error: "Insufficient permissions"
-        "400":
-          description: Bad Request
-  /attendees/{attendeeId}:
-    get:
-      tags:
-        - Attendees
-      responses:
-        "200":
           description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AttendeeStatsResponse"
         "401":
-          description: Unauthorized
+          $ref: "#/components/responses/UnauthorizedResponse"
         "403":
-          description: Forbidden
-        "404":
-          description: Not Found
+          $ref: "#/components/responses/ForbiddenResponse"
         "500":
-          description: Internal Server Error
-  /attendees/me:
-    get:
+          $ref: "#/components/responses/InternalServerErrorResponse"
       tags:
-        - Attendees
-      responses:
-        "200":
-          description: OK
-    put:
-      tags:
-        - Attendees
-      responses:
-        "200":
-          description: Updated
-        "400":
-          description: Bad Request
-        "401":
-          description: Unauthorized
-        "403":
-          description: Forbidden
-        "404":
-          description: Not Found
+        - Statistics
   /pieces/me:
     get:
-      tags:
-        - Pieces
+      description: ดึงชิ้นส่วนของผู้ใช้ที่ล็อกอินอยู่ปัจจุบัน
       responses:
         "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MyPiece"
           description: OK
-  /pieces/collected:
+        "401":
+          $ref: "#/components/responses/UnauthorizedResponse"
+        "403":
+          content:
+            application/json:
+              examples:
+                StaffAccountForbiddenExample:
+                  description: >-
+                    ตัวอย่างการตอบกลับเมื่อสตาฟพยายามเข้าถึงข้อมูลชิ้นส่วนของตัวเอง
+                  summary: Staff Account Forbidden Example
+                  value:
+                    error: Forbidden, staff accounts cannot access pieces
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: >-
+            Forbidden, user does not have permission to access pieces (might be
+            a staff account)
+        "404":
+          content:
+            application/json:
+              examples:
+                PiecesNotCreatedYet:
+                  description: ตัวอย่างการตอบกลับเมื่อผู้ใช้ที่ล็อกอินยังไม่มีชิ้นส่วน
+                  summary: Pieces Not Created Yet Example
+                  value:
+                    error: >-
+                      Pieces not found for the current user (user might not have
+                      registered yet)
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: >-
+            Not Found, pieces for the current user do not exist
+            (ผู้ใช้อาจจะยังไม่ได้กรอกข้อมูลลงทะเบียน)
+        "500":
+          $ref: "#/components/responses/InternalServerErrorResponse"
+      security:
+        - bearerAuth: []
+      summary: ข้อมูลชิ้นส่วนของผู้ใช้ปัจจุบัน
+      tags:
+        - Pieces
+  /pieces/me/collected:
     get:
+      description: ดึงชิ้นส่วนที่ถูกมาได้ของผู้ใช้ที่ล็อกอินอยู่ปัจจุบัน
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                properties:
+                  collected_pieces:
+                    items:
+                      $ref: "#/components/schemas/FriendPiece"
+                    type: array
+                  stats:
+                    $ref: "#/components/schemas/AttendeePiecesStats"
+          description: OK, list of collected pieces (empty array if none)
+        "401":
+          $ref: "#/components/responses/UnauthorizedResponse"
+        "403":
+          content:
+            application/json:
+              examples:
+                StaffAccountForbiddenExample:
+                  description: >-
+                    ตัวอย่างการตอบกลับเมื่อสตาฟพยายามเข้าถึงข้อมูลชิ้นส่วนที่ถูกมาได้ของตัวเอง
+                  summary: Staff Account Forbidden Example
+                  value:
+                    error: Forbidden, staff accounts cannot access collected pieces
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: >-
+            Forbidden, user does not have permission to access collected pieces
+            (might be a staff account)
+        "404":
+          content:
+            application/json:
+              examples:
+                NoCollectedPiecesExample:
+                  description: >-
+                    ตัวอย่างการตอบกลับเมื่อผู้ใช้ที่ล็อกอินยังไม่มีชิ้นส่วนที่ถูกมาได้
+                  summary: No Collected Pieces Example
+                  value:
+                    error: No collected pieces found for the current user
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: >-
+            Not Found, user might not registered yet (if no pieces at all it
+            will return empty array)
+        "500":
+          $ref: "#/components/responses/InternalServerErrorResponse"
+      summary: ข้อมูลชิ้นส่วนที่ถูกมาได้
       tags:
         - Pieces
-      responses:
-        "200":
-          description: OK
-  /checkin:
     post:
-      tags:
-        - Checkin
+      description: เก็บชิ้นส่วนจากเพื่อนโดยใช้รหัสชิ้นส่วนของเพื่อน
+      requestBody:
+        $ref: "#/components/requestBodies/FriendPieceCollectedRequest"
       responses:
         "200":
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessResponse"
+                  - properties:
+                      collected_piece:
+                        $ref: "#/components/schemas/FriendPiece"
+                        description: ข้อมูลชิ้นส่วนที่เก็บมาได้
+                    type: object
+                type: object
           description: OK
         "400":
-          description: Bad Request
+          content:
+            application/json:
+              examples:
+                InvalidPieceCodeExample:
+                  description: ตัวอย่างการตอบกลับเมื่อรหัสชิ้นส่วนไม่ถูกต้อง
+                  summary: Invalid Piece Code Example
+                  value:
+                    error: Invalid piece code
+                OwnPieceCollectionExample:
+                  description: ตัวอย่างการตอบกลับเมื่อพยายามเก็บชิ้นส่วนของตัวเอง
+                  summary: Own Piece Collection Example
+                  value:
+                    error: Cannot collect your own piece
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: Bad Request, invalid piece code or trying to collect own piece
         "401":
-          description: Unauthorized
+          $ref: "#/components/responses/UnauthorizedResponse"
         "403":
-          description: Forbidden
+          $ref: "#/components/responses/ForbiddenResponse"
+          description: >-
+            Forbidden, user does not have permission to collect pieces (might be
+            a staff account)
         "404":
-          description: Not Found
+          content:
+            application/json:
+              examples:
+                PieceNotFoundExample:
+                  description: >-
+                    ตัวอย่างการตอบกลับเมื่อรหัสชิ้นส่วนที่ระบุไม่มีอยู่หรือหมดอายุ
+                  summary: Piece Not Found Example
+                  value:
+                    error: Piece not found or expired
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: Not Found, piece with the specified code does not exist or expired
         "500":
-          description: Internal Server Error
-
+          $ref: "#/components/responses/InternalServerErrorResponse"
+      summary: เก็บชิ้นส่วนจากเพื่อน
+      tags:
+        - Pieces
+  /test:
+    get:
+      description: A simple test endpoint to verify the API is working.
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+          description: OK, The API is working correctly.
+      security: []
+      summary: Test Endpoint
+      tags:
+        - Test
 components:
-  securitySchemes:
-    bearerAuth:
-      type: http
-      scheme: bearer
-      bearerFormat: JWT
-  schemas:
-    TestResponse:
-      type: object
-      properties:
-        ok:
-          type: boolean
-          default: true
+  examples:
+    ForbiddenError:
+      summary: Forbidden Error Example
+      value:
+        error: Forbidden
+    ForbiddenStaffError:
+      summary: Forbidden Staff Error Example
+      value:
+        error: Forbidden, staff accounts cannot access this resource
+    InternalServerError:
+      summary: Internal Server Error Example
+      value:
+        error: Internal server error
+    UnauthorizedError:
+      summary: Unauthorized Error Example
+      value:
+        error: Unauthorized
+  requestBodies:
+    FriendPieceCollectedRequest:
+      description: รหัสชิ้นส่วนของเพื่อนที่ต้องการเก็บs
+      content:
+        application/json:
+          schema:
+            properties:
+              piece_code:
+                summary: รหัสชิ้นส่วนของเพื่อน
+                description: รหัสชิ้นส่วนของเพื่อนที่ต้องการเก็บ
+                $ref: "#/components/schemas/PieceCode"
+            required:
+              - piece_code
+            type: object
+    CheckinAttendeeRequest:
+      description: เช็คอินผู้เข้าร่วมงานด้วยรหัสตั๋ว
+      content:
+        application/json:
+          schema:
+            properties:
+              ticket_code:
+                summary: รหัสตั๋วของผู้เข้าร่วมงาน
+                description: รหัสตั๋วของผู้เข้าร่วมงานที่ต้องการเช็คอิน
+                $ref: "#/components/schemas/AttendeeTicketCode"
     TokensRequest:
-      type: object
-      properties:
-        idToken:
-          type: string
-    TokensResponse:
-      type: object
-      properties:
-        accessToken:
-          type: string
-        refreshToken:
-          type: string
-    AccessTokenRequest:
-      type: object
-      properties:
-        refreshToken:
-          type: string
+      description: Request body for retrieving user tokens using Google idToken.
+      content:
+        application/json:
+          schema:
+            properties:
+              idToken:
+                description: >-
+                  Google ID Token ที่ได้รับจากการล็อกอินผ่าน Google OAuth2
+                type: string
+            required:
+              - idToken
+            type: object
+      required: true
+  responses:
+    ForbiddenResponse:
+      content:
+        application/json:
+          examples:
+            ForbiddenError:
+              $ref: "#/components/examples/ForbiddenError"
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+      description: Forbidden
+    InternalServerErrorResponse:
+      content:
+        application/json:
+          examples:
+            InternalServerError:
+              $ref: "#/components/examples/InternalServerError"
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+      description: Internal Server Error
+    UnauthorizedResponse:
+      content:
+        application/json:
+          examples:
+            UnauthorizedError:
+              $ref: "#/components/examples/UnauthorizedError"
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+      description: Unauthorized
+  schemas:
     AccessTokenResponse:
-      type: object
       properties:
         accessToken:
+          description: Access Token ที่ใช้สำหรับการยืนยันตัวตนใน API
           type: string
-    RefreshTokenResponse:
       type: object
-      properties:
-        refreshToken:
-          type: string
+    Age:
+      description: อายุของผู้เข้าร่วมงาน
+      examples:
+        - 16
+      maximum: 100
+      minimum: 5
+      type: integer
     Attendee:
-      type: object
       properties:
-        id:
+        age:
+          $ref: "#/components/schemas/Age"
+        attendee_type:
+          $ref: "#/components/schemas/AttendeeTypeEnum"
+          description: ประเภทของผู้เข้าร่วมงาน
+        certificate_name:
+          description: ชื่อสำหรับพิมพ์ในใบเกียรติบัตร
           type: string
-        name:
+          examples:
+            - นายสมชาย ใจดี
+            - Miss Ada Lovelace
+        checked_in_at:
+          description: วันที่และเวลาที่ผู้เข้าร่วมงานเช็คอินเข้าสู่งาน
+          format: date-time
           type: string
-        email:
-          type: string
-    Piece:
-      type: object
-      properties:
-        id:
-          type: string
-        name:
-          type: string
-        description:
-          type: string
-    User:
-      type: object
-      properties:
-        id:
-          type: string
-          title: User ID
-        email:
-          type: string
-          title: อีเมลผู้ใช้
-        role:
-          type: string
-          title: บทบาทผู้ใช้
-          description: ได้แก่ "attendee" หรือ "staff"
-        attendeeId:
-          type: string
-          title: Attendee ID
-          description: ID ของผู้เข้าร่วมงานที่เชื่อมโยงกับผู้ใช้
-          nullable: true
-        staffId:
-          type: string
-          title: Staff ID
-          description: ID ของสตาฟที่เชื่อมโยงกับผู้ใช้
-          nullable: true
+        checkin_staff_id:
+          $ref: "#/components/schemas/StaffID"
+          description: ID ของสตาฟที่ทำการเช็คอินให้ผู้เข้าร่วมงาน
         createdAt:
-          type: string
           format: date-time
-          title: วันที่สร้างบัญชีผู้ใช้
+          title: วันที่สร้างข้อมูลผู้เข้าร่วมงาน
+          type: string
+        favorite_workshops:
+          $comment: ส่วนนี้แล้วแต่ frontend กำหนดและส่งมา ไม่มี enum บังคับ
+          description: รายการรหัสเวิร์กช็อปที่ผู้เข้าร่วมงานชื่นชอบ
+          items:
+            type: string
+          type: array
+        firstname:
+          $ref: "#/components/schemas/Firstname"
+        id:
+          $ref: "#/components/schemas/AttendeeID"
+        initial_first_interested_faculty:
+          $ref: "#/components/schemas/FacultyEnum"
+          description: คณะแรกที่สนใจเมื่อเข้าร่วมงาน
+        interested_faculty:
+          $ref: "#/components/schemas/InterestedFaculties"
+        news_sources_other:
+          description: >-
+            แหล่งที่มาของข่าวสารอื่น ๆ หากเลือก 'อื่น ๆ' ใน
+            news_sources_selected
+          type: string
+        news_sources_selected:
+          description: แหล่งที่มาของข่าวสารเกี่ยวกับงาน อย่างน้อย 1 แหล่ง
+          items:
+            $ref: "#/components/schemas/NewsSourceEnum"
+          minItems: 1
+          type: array
+        objective_other:
+          description: วัตถุประสงค์อื่น ๆ หากเลือก 'อื่น ๆ' ใน objective_selected
+          type: string
+        objective_selected:
+          description: ตัวเลือกวัตถุประสงค์ในการเข้าร่วมงาน อย่างน้อย 1 ข้อ
+          items:
+            $ref: "#/components/schemas/ObjectiveEnum"
+          minItems: 1
+          type: array
+        province:
+          $ref: "#/components/schemas/ProvinceEnum"
+        school_name:
+          description: ชื่อโรงเรียนหรือสถาบันการศึกษาของผู้เข้าร่วมงาน
+          examples:
+            - โรงเรียนสาธิตแห่งจุฬาลงกรณ์มหาวิทยาลัย
+            - >-
+              โรงเรียนอะไรไม่รู้แต่ชื่อยาวจัด ๆ ยาวแบบมาก ๆ
+              ไม่น่าจะมีโรงเรียนชื่อนี้ (ตัวอย่างนุกูล)
+            - >-
+              The continental international school of Bangkok (Example in
+              English)
+          type: string
+        study_level:
+          $ref: "#/components/schemas/StudyLevelEnum"
+          description: >-
+            ระดับการศึกษาปัจจุบันของผู้เข้าร่วมงาน แสดงเฉพาะถ้า attendee_type
+            เป็น 'นักเรียนประถมศึกษา' หรือ 'นักเรียนมัธยมศึกษา'
+        surname:
+          $ref: "#/components/schemas/Surname"
+        ticket_code:
+          $ref: "#/components/schemas/AttendeeTicketCode"
         updatedAt:
-          type: string
           format: date-time
-          title: วันที่แก้ไขบัญชีผู้ใช้ล่าสุด
-    SuccessResponse:
+          title: วันที่แก้ไขข้อมูลผู้เข้าร่วมงานล่าสุด
+          type: string
+        user_id:
+          $ref: "#/components/schemas/UserID"
+      required:
+        - id
+        - user_id
+        - firstname
+        - surname
+        - attendee_type
+        - age
+        - province
+        - news_sources_selected
+        - objective_selected
+        - createdAt
+        - updatedAt
       type: object
+    AttendeeCreateRequest:
       properties:
-        ok:
-          type: boolean
-          default: true
-    ErrorResponse:
+        age:
+          $ref: "#/components/schemas/Age"
+        attendee_type:
+          $ref: "#/components/schemas/AttendeeTypeEnum"
+          description: ประเภทของผู้เข้าร่วมงาน
+        firstname:
+          $ref: "#/components/schemas/Firstname"
+        interested_faculty:
+          description: คณะที่สนใจ อย่างน้อย 1 คณะ สูงสุด 4 คณะ
+          items:
+            $ref: "#/components/schemas/FacultyEnum"
+          maxItems: 4
+          minItems: 1
+          type: array
+          uniqueItems: true
+        news_sources_other:
+          description: >-
+            แหล่งที่มาของข่าวสารอื่น ๆ หากเลือก 'อื่น ๆ' ใน
+            news_sources_selected
+          type: string
+        news_sources_selected:
+          description: แหล่งที่มาของข่าวสารเกี่ยวกับงาน อย่างน้อย 1 แหล่ง
+          items:
+            $ref: "#/components/schemas/NewsSourceEnum"
+          minItems: 1
+          type: array
+        objective_other:
+          description: วัตถุประสงค์อื่น ๆ หากเลือก 'อื่น ๆ' ใน objective_selected
+          type: string
+        objective_selected:
+          description: ตัวเลือกวัตถุประสงค์ในการเข้าร่วมงาน อย่างน้อย 1 ข้อ
+          items:
+            $ref: "#/components/schemas/ObjectiveEnum"
+          minItems: 1
+          type: array
+        province:
+          $ref: "#/components/schemas/ProvinceEnum"
+        school_name:
+          description: ชื่อโรงเรียนหรือสถาบันการศึกษาของผู้เข้าร่วมงาน
+          examples:
+            - โรงเรียนสาธิตแห่งจุฬาลงกรณ์มหาวิทยาลัย
+          type: string
+        study_level:
+          $ref: "#/components/schemas/StudyLevelEnum"
+          description: >-
+            ระดับการศึกษาปัจจุบันของผู้เข้าร่วมงาน แสดงเฉพาะถ้า attendee_type
+            เป็น 'นักเรียนประถมศึกษา' หรือ 'นักเรียนมัธยมศึกษา'
+        surname:
+          $ref: "#/components/schemas/Surname"
+      required:
+        - firstname
+        - surname
+        - attendee_type
+        - age
+        - province
+        - news_sources_selected
+        - objective_selected
       type: object
+    AttendeeID:
+      description: UUID ของผู้เข้าร่วมงาน
+      format: uuid
+      type: string
+    AttendeePiecesStats:
+      properties:
+        collected_by_faculty:
+          additionalProperties:
+            properties:
+              count:
+                description: จำนวนชิ้นส่วนที่เก็บมาได้ของคณะนั้น
+                type: integer
+              is_top_1:
+                description: ระบุว่าจำนวนของคณะนี้ของผู้ใช้ปัจจุบันเป็น Top 1% หรือไม่
+                type: boolean
+            type: object
+          description: จำนวนชิ้นส่วนที่เก็บมาได้ แยกตามคณะ
+          examples:
+            - value:
+                eng:
+                  count: 1
+                  is_top_1: false
+                law:
+                  count: 0
+                  is_top_1: false
+                md:
+                  count: 3
+                  is_top_1: true
+                sci:
+                  count: 0
+                  is_top_1: false
+          propertyNames:
+            $ref: "#/components/schemas/FacultyEnum"
+          type: object
+        total_collected:
+          description: จำนวนชิ้นส่วนที่เก็บมาได้ทั้งหมด
+          type: integer
+      type: object
+    AttendeeTicketCode:
+      description: รหัสตั๋วของผู้เข้าร่วมงาน
+      pattern: ^[HSPEA]\d{6}$
+      type: string
+    AttendeeTypeEnum:
+      oneOf:
+        - const: elementaryschool
+          title: นักเรียนประถมศึกษา
+        - const: highschool
+          title: นักเรียนมัธยมศึกษา
+        - const: parent
+          title: ผู้ปกครอง
+        - const: educationstaff
+          title: บุคลากรทางการศึกษา
+        - const: other
+          title: อื่น ๆ
+    AttendeeStatsResponse:
+      properties:
+        total_registered:
+          description: จำนวนผู้ลงทะเบียนทั้งหมด
+          type: integer
+        total_checked_in:
+          description: จำนวนผู้เข้าร่วมงานที่เช็คอินแล้ว
+          type: integer
+        interested_faculty_rank_counts:
+          description: จำนวนผู้เข้าร่วมงานที่เลือกคณะตามลำดับความสนใจ (อันดับ 1-3) แยกตามคณะ
+          additionalProperties:
+            properties:
+              rank_as_1:
+                description: จำนวนผู้เข้าร่วมงานที่เลือกคณะนี้เป็นอันดับ 1
+                type: integer
+              rank_as_2:
+                description: จำนวนผู้เข้าร่วมงานที่เลือกคณะนี้เป็นอันดับ 2
+                type: integer
+              rank_as_3:
+                description: จำนวนผู้เข้าร่วมงานที่เลือกคณะนี้เป็นอันดับ 3
+                type: integer
+            type: object
+          propertyNames:
+            $ref: "#/components/schemas/FacultyEnum"
+          examples:
+            - value:
+                md:
+                  rank_as_1: 20
+                  rank_as_2: 10
+                  rank_as_3: 2
+                sci:
+                  rank_as_1: 50
+                  rank_as_2: 20
+                  rank_as_3: 120
+          type: object
+      required:
+        - total_registered
+        - total_checked_in
+        - interested_faculty_rank_counts
+      type: object
+    AttendeeUpdateRequest:
+      properties:
+        age:
+          $ref: "#/components/schemas/Age"
+        attendee_type:
+          $ref: "#/components/schemas/AttendeeTypeEnum"
+          description: ประเภทของผู้เข้าร่วมงาน
+        firstname:
+          $ref: "#/components/schemas/Firstname"
+        interested_faculty:
+          description: คณะที่สนใจ อย่างน้อย 1 คณะ สูงสุด 4 คณะ
+          items:
+            $ref: "#/components/schemas/FacultyEnum"
+          maxItems: 4
+          minItems: 1
+          type: array
+          uniqueItems: true
+        news_sources_other:
+          description: >-
+            แหล่งที่มาของข่าวสารอื่น ๆ หากเลือก 'อื่น ๆ' ใน
+            news_sources_selected
+          type: string
+        news_sources_selected:
+          description: แหล่งที่มาของข่าวสารเกี่ยวกับงาน อย่างน้อย 1 แหล่ง
+          items:
+            $ref: "#/components/schemas/NewsSourceEnum"
+          minItems: 1
+          type: array
+        objective_other:
+          description: วัตถุประสงค์อื่น ๆ หากเลือก 'อื่น ๆ' ใน objective_selected
+          type: string
+          examples:
+            - อยากหาคณะที่เหมาะกับตัวเอง
+            - ฉันเป็นเพียงไรเดอร์ที่ผ่านทางมา
+            - อยากมาเต้น เต้นให้มันหลุดโลก โยก โยกให้สุดไปเลย
+        objective_selected:
+          description: ตัวเลือกวัตถุประสงค์ในการเข้าร่วมงาน อย่างน้อย 1 ข้อ
+          items:
+            $ref: "#/components/schemas/ObjectiveEnum"
+          minItems: 1
+          type: array
+        province:
+          $ref: "#/components/schemas/ProvinceEnum"
+        school_name:
+          description: ชื่อโรงเรียนหรือสถาบันการศึกษาของผู้เข้าร่วมงาน
+          examples:
+            - โรงเรียนสาธิตแห่งจุฬาลงกรณ์มหาวิทยาลัย
+            - >-
+              โรงเรียนอะไรไม่รู้แต่ชื่อยาวจัด ๆ ยาวแบบมาก ๆ
+              ไม่น่าจะมีโรงเรียนชื่อนี้ (ตัวอย่างนุกูล)
+            - >-
+              The continental international school of Bangkok (Example in
+              English)
+          type: string
+        study_level:
+          $ref: "#/components/schemas/StudyLevelEnum"
+          description: >-
+            ระดับการศึกษาปัจจุบันของผู้เข้าร่วมงาน แสดงเฉพาะถ้า attendee_type
+            เป็น 'นักเรียนประถมศึกษา' หรือ 'นักเรียนมัธยมศึกษา'
+        surname:
+          $ref: "#/components/schemas/Surname"
+      type: object
+    AttendeeWithCheckinStaff:
+      allOf:
+        - $ref: "#/components/schemas/Attendee"
+        - properties:
+            checkin_staff:
+              $ref: "#/components/schemas/Staff"
+              description: ข้อมูลสตาฟที่ทำการเช็คอินให้ผู้เข้าร่วมงาน (ถ้ามี)
+          type: object
+    ErrorResponse:
       properties:
         error:
+          examples:
+            - An error occurred
           type: string
-          example: "Invalid attendee data"
+      type: object
+    FacultyEnum:
+      description: คณะที่เข้าร่วมในกิจกรรม
+      oneOf:
+        - const: edu
+          title: ครุศาสตร์
+        - const: psy
+          title: จิตวิทยา
+        - const: dent
+          title: ทันตแพทยศาสตร์
+        - const: law
+          title: นิติศาสตร์
+        - const: commarts
+          title: นิเทศศาสตร์
+        - const: cbs
+          title: พาณิชยศาสตร์และการบัญชี
+        - const: md
+          title: แพทยศาสตร์
+        - const: pharm
+          title: เภสัชศาสตร์
+        - const: polsci
+          title: รัฐศาสตร์
+        - const: sci
+          title: วิทยาศาสตร์
+        - const: spsc
+          title: วิทยาศาสตร์การกีฬา
+        - const: eng
+          title: วิศวกรรมศาสตร์
+        - const: faa
+          title: ศิลปกรรมศาสตร์
+        - const: econ
+          title: เศรษฐศาสตร์
+        - const: arch
+          title: สถาปัตยกรรมศาสตร์
+        - const: ahs
+          title: สหเวชศาสตร์
+        - const: vet
+          title: สัตวแพทยศาสตร์
+        - const: arts
+          title: อักษรศาสตร์
+        - const: scii
+          title: สถาบันนวัตกรรมบูรณาการแห่งจุฬาลงกรณ์มหาวิทยาลัย (BAScii)
+        - const: cusar
+          title: สำนักวิชาทรัพยากรการเกษตร
+    Firstname:
+      description: ชื่อจริง
+      examples:
+        - สมชาย
+      type: string
+    FriendPiece:
+      properties:
+        collected_at:
+          description: วันที่และเวลาที่ชิ้นส่วนถูกเก็บมาได้
+          format: date-time
+          type: string
+        faculty:
+          $ref: "#/components/schemas/FacultyEnum"
+          description: คณะของชิ้นส่วน
+        id:
+          description: UUID ของชิ้นส่วน
+          format: uuid
+          type: string
+        user_id:
+          $ref: "#/components/schemas/UserID"
+          description: UUID ของผู้ใช้ที่เป็นเจ้าของชิ้นส่วน
+      required:
+        - id
+        - user_id
+        - faculty
+      type: object
+    InterestedFaculties:
+      description: คณะที่สนใจ อย่างน้อย 1 คณะ สูงสุด 4 คณะ
+      items:
+        $ref: "#/components/schemas/FacultyEnum"
+      maxItems: 4
+      minItems: 1
+      type: array
+      uniqueItems: true
+    MyPiece:
+      allOf:
+        - $ref: "#/components/schemas/Piece"
+        - properties:
+            faculty:
+              $ref: "#/components/schemas/FacultyEnum"
+              description: คณะของชิ้นส่วนของผู้เข้าร่วมคนปัจจุบัน
+          type: object
+    NewsSourceEnum:
+      description: แหล่งที่มาของข่าวสารเกี่ยวกับงาน
+      oneOf:
+        - const: Facebook
+          title: Facebook
+        - const: other
+          title: อื่น ๆ
+    ObjectiveEnum:
+      description: ตัวเลือกวัตถุประสงค์ในการเข้าร่วมงาน
+      oneOf:
+        - const: explorechula
+          title: เยี่ยมชมบรรยากาศของมหาวิทยาลัย
+        - const: other
+          title: อื่น ๆ
+    Piece:
+      properties:
+        expire_date:
+          description: วันที่และเวลาที่ชิ้นส่วนจะหมดอายุ
+          format: date-time
+          type: string
+        id:
+          description: UUID ของชิ้นส่วน
+          format: uuid
+          type: string
+        piece_code:
+          $ref: "#/components/schemas/PieceCode"
+        user_id:
+          $ref: "#/components/schemas/UserID"
+          description: UUID ของผู้ใช้ที่เป็นเจ้าของชิ้นส่วน
+      required:
+        - id
+        - user_id
+        - piece_code
+        - expire_date
+      type: object
+    PieceCode:
+      description: รหัสชิ้นส่วนของเพื่อนที่ต้องการเก็บ
+      pattern: ^[A-Z0-9]{6}$
+      type: string
+    ProvinceEnum:
+      oneOf:
+        - const: Krabi
+          title: กระบี่
+        - const: Bangkok
+          title: กรุงเทพมหานคร
+        - const: Kanchanaburi
+          title: กาญจนบุรี
+        - const: Kalasin
+          title: กาฬสินธุ์
+        - const: Kamphaeng Phet
+          title: กำแพงเพชร
+        - const: Khon Kaen
+          title: ขอนแก่น
+        - const: Chanthaburi
+          title: จันทบุรี
+        - const: Chachoengsao
+          title: ฉะเชิงเทรา
+        - const: Chonburi
+          title: ชลบุรี
+        - const: Chai Nat
+          title: ชัยนาท
+        - const: Chaiyaphum
+          title: ชัยภูมิ
+        - const: Chumphon
+          title: ชุมพร
+        - const: Chiang Rai
+          title: เชียงราย
+        - const: Chiang Mai
+          title: เชียงใหม่
+        - const: Trang
+          title: ตรัง
+        - const: Trat
+          title: ตราด
+        - const: Tak
+          title: ตาก
+        - const: Nakhon Nayok
+          title: นครนายก
+        - const: Nakhon Pathom
+          title: นครปฐม
+        - const: Nakhon Phanom
+          title: นครพนม
+        - const: Nakhon Ratchasima
+          title: นครราชสีมา
+        - const: Nakhon Si Thammarat
+          title: นครศรีธรรมราช
+        - const: Nakhon Sawan
+          title: นครสวรรค์
+        - const: Nonthaburi
+          title: นนทบุรี
+        - const: Narathiwat
+          title: นราธิวาส
+        - const: Nan
+          title: น่าน
+        - const: Bueng Kan
+          title: บึงกาฬ
+        - const: Buriram
+          title: บุรีรัมย์
+        - const: Pathum Thani
+          title: ปทุมธานี
+        - const: Prachuap Khiri Khan
+          title: ประจวบคีรีขันธ์
+        - const: Prachinburi
+          title: ปราจีนบุรี
+        - const: Pattani
+          title: ปัตตานี
+        - const: Phra Nakhon Si Ayutthaya
+          title: พระนครศรีอยุธยา
+        - const: Phayao
+          title: พะเยา
+        - const: Phang Nga
+          title: พังงา
+        - const: Phatthalung
+          title: พัทลุง
+        - const: Phichit
+          title: พิจิตร
+        - const: Phitsanulok
+          title: พิษณุโลก
+        - const: Phetchaburi
+          title: เพชรบุรี
+        - const: Phetchabun
+          title: เพชรบูรณ์
+        - const: Phrae
+          title: แพร่
+        - const: Phuket
+          title: ภูเก็ต
+        - const: Maha Sarakham
+          title: มหาสารคาม
+        - const: Mukdahan
+          title: มุกดาหาร
+        - const: Mae Hong Son
+          title: แม่ฮ่องสอน
+        - const: Yasothon
+          title: ยโสธร
+        - const: Yala
+          title: ยะลา
+        - const: Roi Et
+          title: ร้อยเอ็ด
+        - const: Ranong
+          title: ระนอง
+        - const: Rayong
+          title: ระยอง
+        - const: Ratchaburi
+          title: ราชบุรี
+        - const: Lopburi
+          title: ลพบุรี
+        - const: Lampang
+          title: ลำปาง
+        - const: Lamphun
+          title: ลำพูน
+        - const: Loei
+          title: เลย
+        - const: Sisaket
+          title: ศรีสะเกษ
+        - const: Sakon Nakhon
+          title: สกลนคร
+        - const: Songkhla
+          title: สงขลา
+        - const: Satun
+          title: สตูล
+        - const: Samut Prakan
+          title: สมุทรปราการ
+        - const: Samut Songkhram
+          title: สมุทรสงคราม
+        - const: Samut Sakhon
+          title: สมุทรสาคร
+        - const: Sa Kaeo
+          title: สระแก้ว
+        - const: Saraburi
+          title: สระบุรี
+        - const: Sing Buri
+          title: สิงห์บุรี
+        - const: Sukhothai
+          title: สุโขทัย
+        - const: Suphan Buri
+          title: สุพรรณบุรี
+        - const: Surat Thani
+          title: สุราษฎร์ธานี
+        - const: Surin
+          title: สุรินทร์
+        - const: Nong Khai
+          title: หนองคาย
+        - const: Nong Bua Lamphu
+          title: หนองบัวลำภู
+        - const: Ang Thong
+          title: อ่างทอง
+        - const: Amnat Charoen
+          title: อำนาจเจริญ
+        - const: Udon Thani
+          title: อุดรธานี
+        - const: Uttaradit
+          title: อุตรดิตถ์
+        - const: Uthai Thani
+          title: อุทัยธานี
+        - const: Ubon Ratchathani
+          title: อุบลราชธานี
+    Staff:
+      properties:
+        createdAt:
+          format: date-time
+          title: วันที่สร้างข้อมูลสตาฟ
+          type: string
+        cuid:
+          description: เลขนิสิตของสตาฟ
+          type: string
+          examples:
+            - 6730001021
+            - 6430001022
+            - 6230001023
+        email:
+          description: อีเมลของสตาฟ
+          type: string
+          examples:
+            - ada.socool@gmail.com
+            - john.doe@example.com
+            - 6730001021@student.chula.ac.th
+            - somsri.a@chula.ac.th
+        faculty:
+          $ref: "#/components/schemas/FacultyEnum"
+          description: คณะที่สตาฟสังกัด
+        firstname:
+          $ref: "#/components/schemas/Firstname"
+          description: ชื่อจริงของสตาฟ
+        id:
+          $ref: "#/components/schemas/StaffID"
+        nickname:
+          description: ชื่อเล่นของสตาฟ
+          type: string
+          examples:
+            - แอดา
+            - จอห์น
+            - ส้มศรี
+        phone:
+          description: เบอร์โทรศัพท์ของสตาฟ
+          type: string
+          examples:
+            - "0812345678"
+            - "0912345670"
+        surname:
+          $ref: "#/components/schemas/Surname"
+          description: นามสกุลของสตาฟ
+        updatedAt:
+          format: date-time
+          title: วันที่แก้ไขข้อมูลสตาฟล่าสุด
+          type: string
+        userId:
+          $ref: "#/components/schemas/UserID"
+        year:
+          description: ชั้นปีของสตาฟ
+          examples:
+            - ปี 1
+            - ปี 2
+            - ปี 3
+            - ปี 4
+            - อื่น ๆ
+          type: string
+      required:
+        - id
+        - cuid
+        - firstname
+        - surname
+        - nickname
+        - phone
+        - year
+        - email
+        - faculty
+        - createdAt
+        - updatedAt
+      type: object
+    StaffID:
+      description: UUID ของสตาฟ
+      format: uuid
+      type: string
+    StudyLevelEnum:
+      description: ระดับการศึกษาปัจจุบันของผู้เข้าร่วมงาน
+      oneOf:
+        - const: elementary
+          title: ประถมศึกษา
+        - const: matthayom1
+          title: มัธยมศึกษาปีที่ 1
+        - const: matthayom2
+          title: มัธยมศึกษาปีที่ 2
+        - const: matthayom3
+          title: มัธยมศึกษาปีที่ 3
+        - const: matthayom4
+          title: มัธยมศึกษาปีที่ 4
+        - const: matthayom5
+          title: มัธยมศึกษาปีที่ 5
+        - const: matthayom6
+          title: มัธยมศึกษาปีที่ 6
+        - const: vocational1
+          title: ปวช. 1
+        - const: vocational2
+          title: ปวช. 2
+        - const: vocational3
+          title: ปวช. 3
+        - const: highervocational1
+          title: ปวส. 1
+        - const: highervocational2
+          title: ปวส. 2
+        - const: highereducation
+          title: อุดมศึกษา
+        - const: other
+          title: อื่น ๆ
+    SuccessResponse:
+      properties:
+        ok:
+          default: true
+          type: boolean
+      type: object
+    Surname:
+      description: นามสกุล
+      examples:
+        - ใจดี
+      type: string
+    TokenResponse:
+      examples:
+        - accessToken: eyJhbGciOi...asdasoxpoczx
+          refreshToken: def456uvw
+      properties:
+        accessToken:
+          description: Access Token ที่ใช้สำหรับการยืนยันตัวตนใน API
+          type: string
+        refreshToken:
+          description: >-
+            Refresh Token ที่ใช้สำหรับแลก Access Token ใหม่เมื่อหมดอายุ
+            ส่งให้ซ้ำเฉย ๆ แต่แนะนำให้ใช้ค่าจาก Cookie HttpOnly
+          type: string
+      type: object
+    TokensRequest:
+      properties:
+        idToken:
+          description: Google ID Token ที่ได้รับจากการล็อกอินด้วย Google
+          type: string
+      type: object
+    User:
+      properties:
+        attendeeId:
+          $ref: "#/components/schemas/AttendeeID"
+        createdAt:
+          format: date-time
+          title: วันที่สร้างบัญชีผู้ใช้
+          type: string
+        email:
+          title: อีเมลผู้ใช้
+          type: string
+        id:
+          $ref: "#/components/schemas/UserID"
+        role:
+          description: ได้แก่ "attendee" หรือ "staff"
+          enum:
+            - attendee
+            - staff
+          title: บทบาทผู้ใช้
+          type: string
+        staffId:
+          description: ID ของสตาฟที่เชื่อมโยงกับผู้ใช้
+          title: Staff ID
+          type: string
+        updatedAt:
+          format: date-time
+          title: วันที่แก้ไขบัญชีผู้ใช้ล่าสุด
+          type: string
+      type: object
+    UserID:
+      description: UUID ของผู้ใช้
+      format: uuid
+      type: string
+  securitySchemes:
+    bearerAuth:
+      bearerFormat: JWT
+      description: >-
+        ใช้ JWT (JSON Web Token) สำหรับการยืนยันตัวตน ผู้ใช้ต้องส่ง Access Token
+        ใน Header `Authorization: Bearer <access_token>`
+      scheme: bearer
+      type: http
 security:
   - bearerAuth: []
 tags:
   - name: Test
+    description: Endpoints สำหรับทดสอบการทำงานของ API
   - name: Authentication
+    description: Endpoints สำหรับการยืนยันตัวตนและจัดการโทเค็น
   - name: Attendees
+    description: Endpoints สำหรับจัดการผู้เข้าร่วมงาน
   - name: Pieces
+    description: Endpoints สำหรับจัดการชิ้นส่วน
   - name: Checkin
+    description: Endpoints สำหรับการเช็คอินผู้เข้าร่วมงาน (เฉพาะสตาฟ)
+  - name: Statistics
+    description: Endpoints สำหรับดึงสถิติต่าง ๆ เกี่ยวกับผู้เข้าร่วมงาน
