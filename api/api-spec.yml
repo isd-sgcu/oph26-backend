@@ -24,106 +24,7 @@ paths:
         สร้างผู้เข้าร่วมงานใหม่โดยตัวผู้เข้าร่วมงานเอง (Self-Registration)
         เฉพาะผู้ใช้ที่ไม่ใช่สตาฟเท่านั้น
       requestBody:
-        content:
-          application/json:
-            examples:
-              EducationStaffAttendeeExample:
-                summary: ตัวอย่างข้อมูลผู้เข้าร่วมงานประเภทบุคลากรทางการศึกษา
-                value:
-                  age: 35
-                  attendee_type: educationstaff
-                  firstname: นายสมหมาย
-                  news_sources_selected:
-                    - Facebook
-                    - other
-                  objective_other: ครูแนะแนว
-                  objective_selected:
-                    - explorechula
-                    - other
-                  province: Bangkok
-                  surname: แสนดี
-              ElementaryAttendeeExample:
-                summary: ตัวอย่างข้อมูลผู้เข้าร่วมงานประเภทนักเรียนประถมศึกษา
-                value:
-                  age: 10
-                  attendee_type: elementaryschool
-                  firstname: เด็กชายพฤษ
-                  interested_faculty:
-                    - edu
-                    - psy
-                    - eng
-                  news_sources_selected:
-                    - Facebook
-                    - other
-                  objective_other: "-"
-                  objective_selected:
-                    - explorechula
-                    - other
-                  province: Bangkok
-                  school_name: โรงเรียนสาธิตแห่งจุฬาลงกรณ์มหาวิทยาลัย
-                  study_level: elementary
-                  surname: ใจดี
-              HighSchoolAttendeeExample:
-                summary: ตัวอย่างข้อมูลผู้เข้าร่วมงานประเภทนักเรียนมัธยมศึกษา
-                value:
-                  age: 14
-                  attendee_type: highschool
-                  firstname: สมชาย
-                  interested_faculty:
-                    - md
-                    - dent
-                    - psy
-                    - eng
-                  news_sources_other: ติ๊กต๊อก
-                  news_sources_selected:
-                    - Facebook
-                    - other
-                  objective_other: อยากรู้จักจุฬาฯ มากขึ้น
-                  objective_selected:
-                    - explorechula
-                    - other
-                  province: Bangkok
-                  school_name: โรงเรียนสาธิตแห่งจุฬาลงกรณ์มหาวิทยาลัย
-                  study_level: matthayom2
-                  surname: ใจดี
-              OtherAttendeeExample:
-                summary: ตัวอย่างข้อมูลผู้เข้าร่วมงานประเภทอื่น ๆ
-                value:
-                  age: 28
-                  attendee_type: other
-                  firstname: นายสมปอง
-                  news_sources_selected:
-                    - Facebook
-                    - other
-                  objective_other: ฉันเป็นเพียงไรเดอร์ที่ผ่านทางมา
-                  objective_selected:
-                    - explorechula
-                    - other
-                  province: Samut Prakan
-                  surname: สุขใจ
-              ParentAttendeeExample:
-                summary: ตัวอย่างข้อมูลผู้เข้าร่วมงานประเภทผู้ปกครอง
-                value:
-                  age: 40
-                  attendee_type: parent
-                  firstname: นางสายใจ
-                  interested_faculty:
-                    - law
-                    - commarts
-                    - econ
-                  news_sources_selected:
-                    - Facebook
-                    - other
-                  objective_other: อยากหาคณะที่เหมาะกับลูก
-                  objective_selected:
-                    - explorechula
-                    - other
-                  province: Bangkok
-                  surname: ใจดี
-            schema:
-              $ref: "#/components/schemas/AttendeeCreateRequest"
-        description: ข้อมูลสำหรับสร้างผู้เข้าร่วมงานใหม่
-        required: true
+        $ref: "#/components/requestBodies/AttendeeCreateRequest"
       responses:
         "200":
           content:
@@ -144,6 +45,7 @@ paths:
         - Attendees
   /attendees/me:
     get:
+      summary: ดึงข้อมูลผู้เข้าร่วมงานของผู้ใช้ปัจจุบัน
       description: ดึงข้อมูลผู้เข้าร่วมงานของผู้ใช้ที่ล็อกอินอยู่ปัจจุบัน
       responses:
         "200":
@@ -193,14 +95,7 @@ paths:
         อัปเดตข้อมูลผู้เข้าร่วมงานของผู้ใช้ที่ล็อกอินอยู่ปัจจุบัน
         (สตาฟไม่สามารถใช้ได้)
       requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/AttendeeUpdateRequest"
-        description: >-
-          ข้อมูลสำหรับอัปเดตผู้เข้าร่วมงาน ทุก field optional
-          ถ้าส่งมาก็จะอัปเดตเป็นค่าตามนั้น
-        required: true
+        $ref: "#/components/requestBodies/AttendeeUpdateRequest"
       responses:
         "200":
           content:
@@ -408,6 +303,10 @@ paths:
         - Authentication
   /checkin:
     post:
+      summary: เช็คอินผู้เข้าร่วมงาน
+      description: เช็คอินผู้เข้าร่วมงานด้วยรหัสตั๋ว เฉพาะสตาฟเท่านั้น
+      security:
+        - bearerAuth: []
       requestBody:
         $ref: "#/components/requestBodies/CheckinAttendeeRequest"
       responses:
@@ -662,6 +561,114 @@ components:
       value:
         error: Unauthorized
   requestBodies:
+    AttendeeUpdateRequest:
+      description: ข้อมูลสำหรับอัปเดตผู้เข้าร่วมงาน ทุก field optional
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/AttendeeUpdateRequest"
+      required: true
+    AttendeeCreateRequest:
+      description: ข้อมูลสำหรับสร้างผู้เข้าร่วมงานใหม่
+      content:
+        application/json:
+          examples:
+            EducationStaffAttendeeExample:
+              summary: ตัวอย่างข้อมูลผู้เข้าร่วมงานประเภทบุคลากรทางการศึกษา
+              value:
+                age: 35
+                attendee_type: educationstaff
+                firstname: นายสมหมาย
+                news_sources_selected:
+                  - Facebook
+                  - other
+                objective_other: ครูแนะแนว
+                objective_selected:
+                  - explorechula
+                  - other
+                province: Bangkok
+                surname: แสนดี
+            ElementaryAttendeeExample:
+              summary: ตัวอย่างข้อมูลผู้เข้าร่วมงานประเภทนักเรียนประถมศึกษา
+              value:
+                age: 10
+                attendee_type: elementaryschool
+                firstname: เด็กชายพฤษ
+                interested_faculty:
+                  - edu
+                  - psy
+                  - eng
+                news_sources_selected:
+                  - Facebook
+                  - other
+                objective_other: "-"
+                objective_selected:
+                  - explorechula
+                  - other
+                province: Bangkok
+                school_name: โรงเรียนสาธิตแห่งจุฬาลงกรณ์มหาวิทยาลัย
+                study_level: elementary
+                surname: ใจดี
+            HighSchoolAttendeeExample:
+              summary: ตัวอย่างข้อมูลผู้เข้าร่วมงานประเภทนักเรียนมัธยมศึกษา
+              value:
+                age: 14
+                attendee_type: highschool
+                firstname: สมชาย
+                interested_faculty:
+                  - md
+                  - dent
+                  - psy
+                  - eng
+                news_sources_other: ติ๊กต๊อก
+                news_sources_selected:
+                  - Facebook
+                  - other
+                objective_other: อยากรู้จักจุฬาฯ มากขึ้น
+                objective_selected:
+                  - explorechula
+                  - other
+                province: Bangkok
+                school_name: โรงเรียนสาธิตแห่งจุฬาลงกรณ์มหาวิทยาลัย
+                study_level: matthayom2
+                surname: ใจดี
+            OtherAttendeeExample:
+              summary: ตัวอย่างข้อมูลผู้เข้าร่วมงานประเภทอื่น ๆ
+              value:
+                age: 28
+                attendee_type: other
+                firstname: นายสมปอง
+                news_sources_selected:
+                  - Facebook
+                  - other
+                objective_other: ฉันเป็นเพียงไรเดอร์ที่ผ่านทางมา
+                objective_selected:
+                  - explorechula
+                  - other
+                province: Samut Prakan
+                surname: สุขใจ
+            ParentAttendeeExample:
+              summary: ตัวอย่างข้อมูลผู้เข้าร่วมงานประเภทผู้ปกครอง
+              value:
+                age: 40
+                attendee_type: parent
+                firstname: นางสายใจ
+                interested_faculty:
+                  - law
+                  - commarts
+                  - econ
+                news_sources_selected:
+                  - Facebook
+                  - other
+                objective_other: อยากหาคณะที่เหมาะกับลูก
+                objective_selected:
+                  - explorechula
+                  - other
+                province: Bangkok
+                surname: ใจดี
+          schema:
+            $ref: "#/components/schemas/AttendeeCreateRequest"
+      required: true
     FriendPieceCollectedRequest:
       description: รหัสชิ้นส่วนของเพื่อนที่ต้องการเก็บs
       content:
@@ -685,7 +692,20 @@ components:
                 summary: รหัสตั๋วของผู้เข้าร่วมงาน
                 description: รหัสตั๋วของผู้เข้าร่วมงานที่ต้องการเช็คอิน
                 $ref: "#/components/schemas/AttendeeTicketCode"
-
+    TokensRequest:
+      description: Request body for retrieving user tokens using Google idToken.
+      content:
+        application/json:
+          schema:
+            properties:
+              idToken:
+                description: >-
+                  Google ID Token ที่ได้รับจากการล็อกอินผ่าน Google OAuth2
+                type: string
+            required:
+              - idToken
+            type: object
+      required: true
   responses:
     ForbiddenResponse:
       content:
@@ -972,6 +992,10 @@ components:
         objective_other:
           description: วัตถุประสงค์อื่น ๆ หากเลือก 'อื่น ๆ' ใน objective_selected
           type: string
+          examples:
+            - อยากหาคณะที่เหมาะกับตัวเอง
+            - ฉันเป็นเพียงไรเดอร์ที่ผ่านทางมา
+            - อยากมาเต้น เต้นให้มันหลุดโลก โยก โยกให้สุดไปเลย
         objective_selected:
           description: ตัวเลือกวัตถุประสงค์ในการเข้าร่วมงาน อย่างน้อย 1 ข้อ
           items:
