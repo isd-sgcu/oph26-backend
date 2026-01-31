@@ -408,9 +408,21 @@ paths:
         - Authentication
   /checkin:
     post:
+      requestBody:
+        $ref: "#/components/requestBodies/CheckinAttendeeRequest"
       responses:
         "200":
           description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessResponse"
+                  - properties:
+                      attendee:
+                        $ref: "#/components/schemas/Attendee"
+                        description: ข้อมูลผู้เข้าร่วมงานที่ถูกเช็คอิน
+                    type: object
         "400":
           description: Bad Request
         "401":
@@ -419,6 +431,37 @@ paths:
           $ref: "#/components/responses/ForbiddenResponse"
         "404":
           description: Not Found
+          content:
+            application/json:
+              example:
+                error: Attendee not found
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                AttendeeNotFoundExample:
+                  description: >-
+                    ตัวอย่างการตอบกลับเมื่อพยายามเช็คอินผู้เข้าร่วมงานที่ไม่มีอยู่
+                  summary: Attendee Not Found Example
+                  value:
+                    error: Attendee not found
+        "409":
+          description: Conflict
+          content:
+            application/json:
+              # examples:
+              #   AttendeeAlreadyCheckedInExample:
+              #     description: >-
+              #       ตัวอย่างการตอบกลับเมื่อพยายามเช็คอินผู้เข้าร่วมงานที่เช็คอินไปแล้ว
+              #     summary: Attendee Already Checked-In Example
+              #     value:
+              #       error: Attendee has already been checked in
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ErrorResponse"
+                  - properties:
+                      attendee:
+                        $ref: "#/components/schemas/AttendeeWithCheckinStaff"
+                        description: ข้อมูลผู้เข้าร่วมงานที่พยายามเช็คอินซ้ำ
         "500":
           $ref: "#/components/responses/InternalServerErrorResponse"
       tags:
@@ -632,6 +675,17 @@ components:
             required:
               - piece_code
             type: object
+    CheckinAttendeeRequest:
+      description: เช็คอินผู้เข้าร่วมงานด้วยรหัสตั๋ว
+      content:
+        application/json:
+          schema:
+            properties:
+              ticket_code:
+                summary: รหัสตั๋วของผู้เข้าร่วมงาน
+                description: รหัสตั๋วของผู้เข้าร่วมงานที่ต้องการเช็คอิน
+                $ref: "#/components/schemas/AttendeeTicketCode"
+
   responses:
     ForbiddenResponse:
       content:
@@ -684,6 +738,9 @@ components:
         certificate_name:
           description: ชื่อสำหรับพิมพ์ในใบเกียรติบัตร
           type: string
+          examples:
+            - นายสมชาย ใจดี
+            - Miss Ada Lovelace
         checked_in_at:
           description: วันที่และเวลาที่ผู้เข้าร่วมงานเช็คอินเข้าสู่งาน
           format: date-time
@@ -942,6 +999,14 @@ components:
         surname:
           $ref: "#/components/schemas/Surname"
       type: object
+    AttendeeWithCheckinStaff:
+      allOf:
+        - $ref: "#/components/schemas/Attendee"
+        - properties:
+            checkin_staff:
+              $ref: "#/components/schemas/Staff"
+              description: ข้อมูลสตาฟที่ทำการเช็คอินให้ผู้เข้าร่วมงาน (ถ้ามี)
+          type: object
     ErrorResponse:
       properties:
         error:
@@ -1238,9 +1303,18 @@ components:
         cuid:
           description: เลขนิสิตของสตาฟ
           type: string
+          examples:
+            - 6730001021
+            - 6430001022
+            - 6230001023
         email:
           description: อีเมลของสตาฟ
           type: string
+          examples:
+            - ada.socool@gmail.com
+            - john.doe@example.com
+            - 6730001021@student.chula.ac.th
+            - somsri.a@chula.ac.th
         faculty:
           $ref: "#/components/schemas/FacultyEnum"
           description: คณะที่สตาฟสังกัด
@@ -1252,9 +1326,16 @@ components:
         nickname:
           description: ชื่อเล่นของสตาฟ
           type: string
+          examples:
+            - แอดา
+            - จอห์น
+            - ส้มศรี
         phone:
           description: เบอร์โทรศัพท์ของสตาฟ
           type: string
+          examples:
+            - "0812345678"
+            - "0912345670"
         surname:
           $ref: "#/components/schemas/Surname"
           description: นามสกุลของสตาฟ
@@ -1268,6 +1349,9 @@ components:
           description: ชั้นปีของสตาฟ
           examples:
             - ปี 1
+            - ปี 2
+            - ปี 3
+            - ปี 4
             - อื่น ๆ
           type: string
       required:
