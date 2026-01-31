@@ -14,7 +14,7 @@ type Attendee struct {
 	User                          User           `gorm:"foreignKey:UserID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
 	Firstname                     string         `gorm:"not null"`
 	Surname                       string         `gorm:"not null"`
-	AttendeeType                  string         `gorm:"type:text;not null;check:attendee_type IN ('Matthayom','Prathom','Parent','EducationStaff','Other')"`
+	AttendeeType                  string         `gorm:"type:text;not null;check:attendee_type IN ('elementaryschool','highschool','parent','educationstaff','other')"`
 	Age                           int            `gorm:"not null"`
 	Province                      string         `gorm:"not null"`
 	StudyLevel                    *string        `gorm:"type:text"`
