@@ -358,6 +358,27 @@ paths:
           $ref: '#/components/responses/InternalServerErrorResponse'
       tags:
         - Checkin
+  /stats/attendees:
+    get:
+      summary: สถิติผู้เข้าร่วมงาน
+      description: นับจำนวนผู้ลงทะเบียนทั้งหมด จำนวนผู้เช็คอิน และจำนวนความสนใจคณะ (เฉพาะสตาฟ)
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AttendeeStatsResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerErrorResponse'
+      tags:
+        - Statistics
   /pieces/me:
     get:
       description: ดึงชิ้นส่วนของผู้ใช้ที่ล็อกอินอยู่ปัจจุบัน
@@ -954,6 +975,45 @@ components:
           title: บุคลากรทางการศึกษา
         - const: other
           title: อื่น ๆ
+    AttendeeStatsResponse:
+      properties:
+        total_registered:
+          description: จำนวนผู้ลงทะเบียนทั้งหมด
+          type: integer
+        total_checked_in:
+          description: จำนวนผู้เข้าร่วมงานที่เช็คอินแล้ว
+          type: integer
+        interested_faculty_rank_counts:
+          description: จำนวนผู้เข้าร่วมงานที่เลือกคณะตามลำดับความสนใจ (อันดับ 1-3) แยกตามคณะ
+          additionalProperties:
+            properties:
+              rank_as_1:
+                description: จำนวนผู้เข้าร่วมงานที่เลือกคณะนี้เป็นอันดับ 1
+                type: integer
+              rank_as_2:
+                description: จำนวนผู้เข้าร่วมงานที่เลือกคณะนี้เป็นอันดับ 2
+                type: integer
+              rank_as_3:
+                description: จำนวนผู้เข้าร่วมงานที่เลือกคณะนี้เป็นอันดับ 3
+                type: integer
+            type: object
+          propertyNames:
+            $ref: '#/components/schemas/FacultyEnum'
+          example:
+            md:
+              rank_as_1: 20
+              rank_as_2: 10
+              rank_as_3: 2
+            sci:
+              rank_as_1: 50
+              rank_as_2: 20
+              rank_as_3: 120
+          type: object
+      required:
+        - total_registered
+        - total_checked_in
+        - interested_faculty_rank_counts
+      type: object
     AttendeeUpdateRequest:
       properties:
         age:
@@ -1504,3 +1564,5 @@ tags:
     description: Endpoints สำหรับจัดการชิ้นส่วน
   - name: Checkin
     description: Endpoints สำหรับการเช็คอินผู้เข้าร่วมงาน (เฉพาะสตาฟ)
+  - name: Statistics
+    description: Endpoints สำหรับดึงสถิติต่าง ๆ เกี่ยวกับผู้เข้าร่วมงาน
