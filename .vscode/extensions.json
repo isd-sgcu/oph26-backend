@@ -1,6 +1,7 @@
 {
   "recommendations": [
     "philosowaffle.openapi-designer",
-    "MermaidChart.vscode-mermaid-chart"
+    "MermaidChart.vscode-mermaid-chart",
+    "golang.go"
  ]
 }
