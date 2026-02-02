@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"oph26-backend/internal/config"
 	"oph26-backend/internal/initializer"
 	"oph26-backend/internal/middleware"
@@ -30,5 +31,5 @@ func main() {
 
 	route.SetupRoutes(r, authUsecase, authMiddleware)
 
-	r.Listen(":8080")
+	log.Fatal(r.Listen(":8080"))
 }
