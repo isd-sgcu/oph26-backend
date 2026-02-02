@@ -27,6 +27,7 @@ type Attendee struct {
 	ObjectiveOther                *string        `gorm:"type:text"`
 	TicketCode                    string         `gorm:"type:char(7);not null;uniqueIndex"`
 	MyPieceID                     *uuid.UUID     `gorm:"type:uuid"`
+	MyPiece                       *MyPiece       `gorm:"foreignKey:MyPieceID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL"`
 	CertificateName               *string        `gorm:"type:text"`
 	CheckinStaffID                *uuid.UUID     `gorm:"type:uuid"`
 	CheckinStaff                  *Staff         `gorm:"foreignKey:CheckinStaffID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL"`
