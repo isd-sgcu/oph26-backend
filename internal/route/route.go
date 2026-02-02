@@ -5,13 +5,12 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 
-	"oph26-backend/internal/repository"
 	"oph26-backend/internal/usecase"
 )
 
 var startTime = time.Now()
 
-func SetupRoutes(r *fiber.App) {
+func SetupRoutes(r *fiber.App, authUsecase usecase.AuthUsecase, authMiddleware fiber.Handler) {
 	r.Get("/healthz", func(c *fiber.Ctx) error {
 		uptime := time.Since(startTime).String()
 		return c.JSON(fiber.Map{
@@ -20,16 +19,19 @@ func SetupRoutes(r *fiber.App) {
 		})
 	})
 
-	// Initialize Repository (Data Layer)
-	userRepo := repository.NewUserRepository()
-
-	// Initialize Use Case (Business Logic Layer)
-	userUsecase := usecase.NewUserUsecase(userRepo)
-
 	api := r.Group("/api")
 	{
 		api.Get("/ping", usecase.Ping)
+
+		// Example of protected route (as per requirement, but applies generally)
+		// attendees := api.Group("/attendees", authMiddleware)
+		// attendees.Post("/", ...)
 		// Delivery Layer: HTTP handlers that call Use Cases
-		api.Get("/users", userUsecase.GetAllUsers)
+		// api.Get("/users", userUsecase.GetAllUsers)
+
+		auth := api.Group("/auth")
+		{
+			auth.Post("/token", authUsecase.Login)
+		}
 	}
 }

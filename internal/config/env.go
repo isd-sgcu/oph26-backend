@@ -5,12 +5,16 @@ import (
 )
 
 type Config struct {
-	DataBaseURL string
+	DataBaseURL    string
+	JWTSecret      string
+	GoogleClientID string
 }
 
 func LoadEnv() *Config {
 	return &Config{
-		DataBaseURL: getEnv("DATABASE_URL", ""),
+		DataBaseURL:    getEnv("DATABASE_URL", ""),
+		JWTSecret:      getEnv("JWT_SECRET", "secret"),
+		GoogleClientID: getEnv("GOOGLE_CLIENT_ID", ""),
 	}
 }
 

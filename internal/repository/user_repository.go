@@ -1,94 +1,41 @@
 package repository
 
 import (
-	"oph26-backend/internal/config"
-	"oph26-backend/internal/entity"
+	"errors"
 	"oph26-backend/internal/model"
 
-	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
-type UserRepository struct{}
-
-func NewUserRepository() *UserRepository {
-	return &UserRepository{}
+type UserRepository interface {
+	FindByEmail(email string) (*model.User, error)
+	Create(user *model.User) error
+	Update(user *model.User) error
 }
 
-func (r *UserRepository) GetAllUsers() ([]entity.User, error) {
-	var dbUsers []model.User
-	err := config.DB.Find(&dbUsers).Error
-	if err != nil {
-		return nil, err
-	}
+type UserRepositoryImpl struct {
+	DB *gorm.DB
+}
 
-	// Convert models to entities
-	entities := make([]entity.User, len(dbUsers))
-	for i, dbUser := range dbUsers {
-		entities[i] = entity.User{
-			ID:         dbUser.ID,
-			Email:      dbUser.Email,
-			Role:       dbUser.Role,
-			AttendeeId: dbUser.AttendeeId,
-			StaffId:    dbUser.StaffId,
-			CreatedAt:  dbUser.CreatedAt,
-			UpdatedAt:  dbUser.UpdatedAt,
+func NewUserRepository(db *gorm.DB) UserRepository {
+	return &UserRepositoryImpl{DB: db}
+}
+
+func (r *UserRepositoryImpl) FindByEmail(email string) (*model.User, error) {
+	var user model.User
+	if err := r.DB.Where("email = ?", email).First(&user).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil
 		}
-	}
-
-	return entities, nil
-}
-
-func (r *UserRepository) GetUserByID(id uuid.UUID) (*entity.User, error) {
-	var dbUser model.User
-	err := config.DB.First(&dbUser, id).Error
-	if err != nil {
 		return nil, err
 	}
-
-	// Convert model to entity
-	entity := &entity.User{
-		ID:         dbUser.ID,
-		Email:      dbUser.Email,
-		Role:       dbUser.Role,
-		AttendeeId: dbUser.AttendeeId,
-		StaffId:    dbUser.StaffId,
-		CreatedAt:  dbUser.CreatedAt,
-		UpdatedAt:  dbUser.UpdatedAt,
-	}
-
-	return entity, nil
+	return &user, nil
 }
 
-func (r *UserRepository) CreateUser(user *entity.User) error {
-	// Convert entity to model
-	dbUser := &model.User{
-		ID:         user.ID,
-		Email:      user.Email,
-		Role:       user.Role,
-		AttendeeId: user.AttendeeId,
-		StaffId:    user.StaffId,
-		CreatedAt:  user.CreatedAt,
-		UpdatedAt:  user.UpdatedAt,
-	}
-
-	return config.DB.Create(dbUser).Error
+func (r *UserRepositoryImpl) Create(user *model.User) error {
+	return r.DB.Create(user).Error
 }
 
-func (r *UserRepository) UpdateUser(user *entity.User) error {
-	// Convert entity to model
-	dbUser := &model.User{
-		ID:         user.ID,
-		Email:      user.Email,
-		Role:       user.Role,
-		AttendeeId: user.AttendeeId,
-		StaffId:    user.StaffId,
-		CreatedAt:  user.CreatedAt,
-		UpdatedAt:  user.UpdatedAt,
-	}
-
-	return config.DB.Save(dbUser).Error
-}
-
-func (r *UserRepository) DeleteUser(id uuid.UUID) error {
-	return config.DB.Delete(&model.User{}, id).Error
+func (r *UserRepositoryImpl) Update(user *model.User) error {
+	return r.DB.Save(user).Error
 }
