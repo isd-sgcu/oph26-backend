@@ -6,13 +6,22 @@ import (
 	"github.com/google/uuid"
 )
 
-// User model for database operations (GORM)
 type User struct {
-	ID         uuid.UUID  `gorm:"type:uuid;default:uuid_generate_v4();primaryKey"`
-	Email      string     `gorm:"uniqueIndex;not null"`
-	Role       string     `gorm:"not null"`
-	AttendeeId *uuid.UUID `gorm:"type:uuid"`
-	StaffId    *uuid.UUID `gorm:"type:uuid"`
+	ID         uuid.UUID
+	Email      string
+	Role       string
+	AttendeeId *uuid.UUID
+	StaffId    *uuid.UUID
 	CreatedAt  time.Time
 	UpdatedAt  time.Time
+}
+
+func NewUser(email, role string) *User {
+	return &User{
+		ID:        uuid.New(),
+		Email:     email,
+		Role:      role,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	}
 }

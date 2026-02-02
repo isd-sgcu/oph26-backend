@@ -2,7 +2,7 @@ package config
 
 import (
 	"fmt"
-	"oph26-backend/internal/model"
+	"oph26-backend/internal/entity"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -24,7 +24,7 @@ func InitDB(cfg *Config) {
 		fmt.Println("Failed to create uuid-ossp extension:", err)
 		return
 	}
-	err = DB.AutoMigrate(&model.User{}, &model.Score{}, &model.Leaderboard{}, &model.Staff{}, &model.Attendee{}, &model.MyPiece{}, &model.CollectedPiece{})
+	err = DB.AutoMigrate(&entity.User{}, &entity.Score{}, &entity.Leaderboard{}, &entity.Staff{}, &entity.Attendee{}, &entity.MyPiece{}, &entity.CollectedPiece{})
 	if err != nil {
 		fmt.Println("Failed to migrate database:", err)
 		return

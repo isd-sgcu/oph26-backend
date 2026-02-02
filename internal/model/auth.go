@@ -1,4 +1,4 @@
-package entity
+package model
 
 type LoginRequest struct {
 	IDToken string `json:"idToken" validate:"required"`

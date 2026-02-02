@@ -3,8 +3,8 @@ package usecase
 import (
 	"context"
 	"fmt"
-	"oph26-backend/internal/entity"
 	"oph26-backend/internal/model"
+	"oph26-backend/internal/entity"
 	"oph26-backend/internal/repository"
 	"time"
 
@@ -32,7 +32,7 @@ func NewAuthUsecase(userRepository repository.UserRepository, googleClientID str
 }
 
 func (u *AuthUsecaseImpl) Login(c *fiber.Ctx) error {
-	request := new(entity.LoginRequest)
+	request := new(model.LoginRequest)
 	if err := c.BodyParser(request); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "Cannot parse JSON",
@@ -60,7 +60,7 @@ func (u *AuthUsecaseImpl) Login(c *fiber.Ctx) error {
 	}
 
 	if user == nil {
-		user = &model.User{
+		user = &entity.User{
 			Email: email,
 			Role:  "user", // Default role
 		}
@@ -96,7 +96,7 @@ func (u *AuthUsecaseImpl) Login(c *fiber.Ctx) error {
 		MaxAge:   60 * 60 * 24 * 7, // 7 days
 	})
 
-	return c.JSON(&entity.TokenResponse{
+	return c.JSON(&model.TokenResponse{
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
 	})
@@ -129,7 +129,7 @@ func (u *AuthUsecaseImpl) validateGoogleToken(ctx context.Context, token string)
 	return idtoken.Validate(ctx, token, u.GoogleClientID)
 }
 
-func (u *AuthUsecaseImpl) generateAccessToken(user *model.User) (string, error) {
+func (u *AuthUsecaseImpl) generateAccessToken(user *entity.User) (string, error) {
 	claims := jwt.MapClaims{
 		"user_id": user.ID,
 		"email":   user.Email,
@@ -140,7 +140,7 @@ func (u *AuthUsecaseImpl) generateAccessToken(user *model.User) (string, error) 
 	return token.SignedString([]byte(u.JWTSecret))
 }
 
-func (u *AuthUsecaseImpl) generateRefreshToken(user *model.User) (string, error) {
+func (u *AuthUsecaseImpl) generateRefreshToken(user *entity.User) (string, error) {
 	claims := jwt.MapClaims{
 		"user_id": user.ID,
 		"exp":     time.Now().Add(time.Hour * 24 * 7).Unix(), // 7 days
