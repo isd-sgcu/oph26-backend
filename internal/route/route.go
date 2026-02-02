@@ -5,6 +5,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 
+	"oph26-backend/internal/repository"
 	"oph26-backend/internal/usecase"
 )
 
@@ -19,8 +20,16 @@ func SetupRoutes(r *fiber.App) {
 		})
 	})
 
+	// Initialize Repository (Data Layer)
+	userRepo := repository.NewUserRepository()
+
+	// Initialize Use Case (Business Logic Layer)
+	userUsecase := usecase.NewUserUsecase(userRepo)
+
 	api := r.Group("/api")
 	{
 		api.Get("/ping", usecase.Ping)
+		// Delivery Layer: HTTP handlers that call Use Cases
+		api.Get("/users", userUsecase.GetAllUsers)
 	}
 }
