@@ -3,8 +3,8 @@ package usecase
 import (
 	"context"
 	"fmt"
-	"oph26-backend/internal/model"
 	"oph26-backend/internal/entity"
+	"oph26-backend/internal/model"
 	"oph26-backend/internal/repository"
 	"time"
 
@@ -103,18 +103,8 @@ func (u *AuthUsecaseImpl) Login(c *fiber.Ctx) error {
 }
 
 func (u *AuthUsecaseImpl) validateGoogleToken(ctx context.Context, token string) (*idtoken.Payload, error) {
-	// Start local mock for development if needed, or real validation
-	// payload, err := idtoken.Validate(ctx, token, u.GoogleClientID)
-	// return payload, err
-	
-	// For simplicity in this environment where I don't have a real Google Client ID set up and might fail:
-	// But the user asked for Clean Architecture, so I should do it right.
-	// However, if I cannot make network calls to Google, it might fail. 
-	// I will just use the library.
-	
-	// Check if client ID is set, if not, maybe skip validation (dev mode?) or fail.
-	// For production readiness, we should validate.
-	
+	// TODO: Recheck this function before production
+
 	if u.GoogleClientID == "" {
 		// Mock for now if no client ID provided in env
 		// In production this should be an error or stricter.
@@ -131,6 +121,8 @@ func (u *AuthUsecaseImpl) validateGoogleToken(ctx context.Context, token string)
 
 func (u *AuthUsecaseImpl) generateAccessToken(user *entity.User) (string, error) {
 	claims := jwt.MapClaims{
+		"iss":     "isd-oph26-backend",
+		"sub":     user.ID,
 		"user_id": user.ID,
 		"email":   user.Email,
 		"role":    user.Role,
