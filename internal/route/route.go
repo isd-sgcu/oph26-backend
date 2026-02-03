@@ -10,7 +10,7 @@ import (
 
 var startTime = time.Now()
 
-func SetupRoutes(r *fiber.App) {
+func SetupRoutes(r *fiber.App, authUsecase usecase.AuthUsecase, authMiddleware fiber.Handler) {
 	r.Get("/healthz", func(c *fiber.Ctx) error {
 		uptime := time.Since(startTime).String()
 		return c.JSON(fiber.Map{
@@ -22,5 +22,16 @@ func SetupRoutes(r *fiber.App) {
 	api := r.Group("/api")
 	{
 		api.Get("/ping", usecase.Ping)
+
+		// Example of protected route (as per requirement, but applies generally)
+		// attendees := api.Group("/attendees", authMiddleware)
+		// attendees.Post("/", ...)
+		// Delivery Layer: HTTP handlers that call Use Cases
+		// api.Get("/users", userUsecase.GetAllUsers)
+
+		auth := api.Group("/auth")
+		{
+			auth.Post("/token", authUsecase.Login)
+		}
 	}
 }
