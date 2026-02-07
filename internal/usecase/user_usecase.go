@@ -2,14 +2,24 @@ package usecase
 
 import (
 	"oph26-backend/internal/repository"
+
+	"github.com/gofiber/fiber/v2"
 )
 
-type UserUsecase struct {
+type UserUsecaseImpl struct {
 	userRepo repository.UserRepository
 }
 
-func NewUserUsecase(userRepo repository.UserRepository) *UserUsecase {
-	return &UserUsecase{
+type UserUsecase interface {
+	PutAttendeesUseCase(c *fiber.Ctx) error
+}
+
+func NewUserUsecase(userRepo repository.UserRepository) UserUsecase {
+	return &UserUsecaseImpl{
 		userRepo: userRepo,
 	}
+}
+
+func (u *UserUsecaseImpl) PutAttendeesUseCase(c *fiber.Ctx) error {
+	return nil
 }
