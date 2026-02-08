@@ -30,7 +30,7 @@ func main() {
 	pieceUsecase := usecase.NewPieceUsecase(pieceRepo)
 
 	attendeeRepo := repository.NewAttendeeRepository(config.DB)
-	attendeeUsecase := usecase.NewAttendeeUsecase(attendeeRepo)
+	attendeeUsecase := usecase.NewAttendeeUsecase(userRepo, attendeeRepo)
 
 	// Init Middleware
 	authMiddleware := middleware.NewAuthMiddleware(cfg.JWTSecret)
