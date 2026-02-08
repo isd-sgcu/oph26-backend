@@ -3,7 +3,7 @@ package usecase
 import (
 	"oph26-backend/internal/entity"
 	"oph26-backend/internal/model"
-	"oph26-backend/internal/model/user"
+	"oph26-backend/internal/model/attendee"
 	"oph26-backend/internal/repository"
 	"regexp"
 
@@ -197,7 +197,7 @@ func (u *AttendeeUsecaseImpl) PutAttendeesUseCase(c *fiber.Ctx) error {
 		})
 	}
 
-	var reqBody user.PutAttendeesRequest
+	var reqBody attendee.PutAttendeesRequest
 	if err := c.BodyParser(&reqBody); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "Invalid request body",
@@ -223,7 +223,7 @@ func (u *AttendeeUsecaseImpl) PutAttendeesUseCase(c *fiber.Ctx) error {
 	}
 
 	// No update to do if body is empty
-	if (user.PutAttendeesRequest{}) == reqBody {
+	if (attendee.PutAttendeesRequest{}) == reqBody {
 		return c.SendStatus(fiber.StatusNoContent)
 	}
 

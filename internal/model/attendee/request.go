@@ -1,4 +1,4 @@
-package user
+package attendee
 
 import "github.com/lib/pq"
 
