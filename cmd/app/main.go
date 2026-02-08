@@ -24,11 +24,11 @@ func main() {
 
 	// Init Dependencies
 	userRepo := repository.NewUserRepository(config.DB)
+	pieceRepo := repository.NewPieceRepository(config.DB)
 	userUsecase := usecase.NewUserUsecase(userRepo)
 	attendeeRepo := repository.NewAttendeeRepository(config.DB)
 	attendeeUsecase := usecase.NewAttendeeUsecase(userRepo, attendeeRepo)
 	authUsecase := usecase.NewAuthUsecase(userRepo, cfg.GoogleClientID, cfg.JWTSecret)
-	pieceRepo := repository.NewPieceRepository(config.DB)
 	pieceUsecase := usecase.NewPieceUsecase(pieceRepo)
 
 	// Init Middleware
