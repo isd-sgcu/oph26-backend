@@ -4,10 +4,13 @@ import (
 	"crypto/rand"
 	"math/big"
 	"oph26-backend/internal/entity"
-	"oph26-backend/internal/model/user"
+	"oph26-backend/internal/model"
+	"oph26-backend/internal/model/attendee"
 	"oph26-backend/internal/repository"
+	"slices"
 	"time"
 
+	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 )
@@ -29,13 +32,6 @@ func NewAttendeeUsecase(userRepository repository.UserRepository, attendeeReposi
 }
 
 func (u *AttendeeUsecaseImpl) PostAttendeesUseCase(c *fiber.Ctx) error {
-	request := new(user.AttendeeCreateRequest)
-	if err := c.BodyParser(request); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Cannot parse JSON",
-		})
-	}
-
 	// this wont ever be invalid right?
 	userIdRaw := c.Locals("user_id").(string)
 	userId, err := uuid.Parse(userIdRaw)
@@ -53,9 +49,75 @@ func (u *AttendeeUsecaseImpl) PostAttendeesUseCase(c *fiber.Ctx) error {
 			"error": "This is for self-registration. (non staff only)",
 		})
 	}
+	// userId := uuid.New()
+
+	request := new(attendee.AttendeeCreateRequest)
+	if err := c.BodyParser(request); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Cannot parse JSON",
+		})
+	}
+
+	// Validationnnnnn
+	validate := validator.New()
+	if err := validate.Struct(request); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Fail to validate JSON",
+		})
+	}
+
+	if !model.NewsSourcesAreValid(request.NewsSourceSelected) {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid request body; unknowns new source",
+		})
+	}
+
+	if slices.Contains(request.NewsSourceSelected, string(model.OtherNewsSource)) && request.NewsSourcesOther == nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid request body; news_sources_selected is 'อื่น ๆ', but news_sources_other is not provided",
+		})
+	}
+
+	if !model.ObjectivesAreValid(request.ObjectiveSelected) {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid request body; unknowns objective",
+		})
+	}
+
+	if slices.Contains(request.ObjectiveSelected, string(model.OtherObjective)) && request.ObjectiveOther == nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid request body; objective_selected is 'อื่น ๆ', but objective_other is not provided",
+		})
+	}
+
+	if !model.ProvinceIsValid(request.Province) {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid request body; unknown province",
+		})
+	}
+
+	if request.StudyLevel != nil && !model.StudyLevelIsValid(*request.StudyLevel) {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid request body; unknown study_level",
+		})
+	}
+
+	// validate options array
+	arr := []string(request.InterestedFaculty)
+	if !model.FacultiesAreValid(arr) {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid request body; unknown faculty",
+		})
+	}
+
+	arr = []string(request.ObjectiveSelected)
+	if !model.ObjectivesAreValid(arr) {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid request body; unknown objective",
+		})
+	}
 
 	code, _ := generatePieceCode()
-
 	attendee := entity.Attendee{
 		UserID:                        userId,
 		Firstname:                     request.Firstname,
