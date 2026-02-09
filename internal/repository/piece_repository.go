@@ -11,6 +11,9 @@ import (
 type PieceRepository interface {
 	FindAttendeeByUserID(userID uuid.UUID) (*entity.Attendee, error)
 	FindMyPieceByAttendeeID(attendeeID uuid.UUID) (*entity.MyPiece, error)
+	FindCollectedPiecesByAttendeeID(attendeeID uuid.UUID) ([]entity.CollectedPiece, error)
+	CountCollectedByFaculty(attendeeID uuid.UUID) (map[string]int, error)
+	CountTop1ThresholdByFaculty() (map[string]int, error)
 }
 
 type PieceRepositoryImpl struct {
@@ -41,4 +44,73 @@ func (r *PieceRepositoryImpl) FindMyPieceByAttendeeID(attendeeID uuid.UUID) (*en
 		return nil, err
 	}
 	return &piece, nil
+}
+
+func (r *PieceRepositoryImpl) FindCollectedPiecesByAttendeeID(attendeeID uuid.UUID) ([]entity.CollectedPiece, error) {
+	var pieces []entity.CollectedPiece
+	if err := r.DB.
+		Preload("MyPiece").
+		Preload("MyPiece.Attendee").
+		Where("attendee_id = ?", attendeeID).
+		Find(&pieces).Error; err != nil {
+		return nil, err
+	}
+	return pieces, nil
+}
+
+func (r *PieceRepositoryImpl) CountCollectedByFaculty(attendeeID uuid.UUID) (map[string]int, error) {
+	type result struct {
+		Faculty string
+		Count   int
+	}
+	var results []result
+
+	err := r.DB.
+		Table("collected_pieces").
+		Select("attendees.initial_first_interested_faculty AS faculty, COUNT(*) AS count").
+		Joins("JOIN my_pieces ON my_pieces.id = collected_pieces.piece_id").
+		Joins("JOIN attendees ON attendees.id = my_pieces.attendee_id").
+		Where("collected_pieces.attendee_id = ?", attendeeID).
+		Group("attendees.initial_first_interested_faculty").
+		Scan(&results).Error
+	if err != nil {
+		return nil, err
+	}
+
+	m := make(map[string]int)
+	for _, r := range results {
+		m[r.Faculty] = r.Count
+	}
+	return m, nil
+}
+
+func (r *PieceRepositoryImpl) CountTop1ThresholdByFaculty() (map[string]int, error) {
+	type result struct {
+		Faculty   string
+		Threshold int
+	}
+	var results []result
+
+	err := r.DB.Raw(`
+		SELECT faculty, COALESCE(percentile_disc(0.99) WITHIN GROUP (ORDER BY cnt), 0)::int AS threshold
+		FROM (
+			SELECT attendees.initial_first_interested_faculty AS faculty,
+			       collected_pieces.attendee_id,
+			       COUNT(*) AS cnt
+			FROM collected_pieces
+			JOIN my_pieces ON my_pieces.id = collected_pieces.piece_id
+			JOIN attendees ON attendees.id = my_pieces.attendee_id
+			GROUP BY attendees.initial_first_interested_faculty, collected_pieces.attendee_id
+		) sub
+		GROUP BY faculty
+	`).Scan(&results).Error
+	if err != nil {
+		return nil, err
+	}
+
+	m := make(map[string]int)
+	for _, r := range results {
+		m[r.Faculty] = r.Threshold
+	}
+	return m, nil
 }

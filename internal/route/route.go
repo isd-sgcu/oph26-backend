@@ -37,6 +37,7 @@ func SetupRoutes(r *fiber.App, authUsecase usecase.AuthUsecase, pieceUsecase use
 		pieces := api.Group("/pieces", authMiddleware)
 		{
 			pieces.Get("/me", pieceUsecase.GetMyPiece)
+			pieces.Get("/me/collected", pieceUsecase.GetCollectedPieces)
 		}
 	}
 }
