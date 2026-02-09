@@ -5,6 +5,7 @@ import (
 	"oph26-backend/internal/model"
 	"oph26-backend/internal/model/attendee"
 	"oph26-backend/internal/repository"
+	"reflect"
 	"regexp"
 
 	"github.com/gofiber/fiber/v2"
@@ -227,19 +228,47 @@ func (u *AttendeeUsecaseImpl) PutAttendeesUseCase(c *fiber.Ctx) error {
 		return c.SendStatus(fiber.StatusNoContent)
 	}
 
-	updateStruct := entity.Attendee{
-		Firstname:          *reqBody.Firstname,
-		Surname:            *reqBody.Surname,
-		Age:                *reqBody.Age,
-		Province:           *reqBody.Province,
-		StudyLevel:         reqBody.StudyLevel,
-		SchoolName:         reqBody.SchoolName,
-		NewsSourceSelected: *reqBody.NewsSourceSelected,
-		NewsSourcesOther:   reqBody.NewsSourcesOther,
-		InterestedFaculty:  *reqBody.InterestedFaculty,
-		ObjectiveSelected:  *reqBody.ObjectiveSelected,
-		ObjectiveOther:     reqBody.ObjectiveOther,
+	// Map request body to attendee entity
+	reqType := reflect.TypeOf(reqBody)
+	updateStruct := entity.Attendee{}
+
+	for i := 0; i < reqType.NumField(); i++ {
+		switch reqType.Field(i).Name {
+		case "Firstname":
+			updateStruct.Firstname = *reqBody.Firstname
+
+		case "Surname":
+			updateStruct.Surname = *reqBody.Surname
+
+		case "Age":
+			updateStruct.Age = *reqBody.Age
+
+		case "Province":
+			updateStruct.Province = *reqBody.Province
+
+		case "StudyLevel":
+			updateStruct.StudyLevel = reqBody.StudyLevel
+
+		case "SchoolName":
+			updateStruct.SchoolName = reqBody.SchoolName
+
+		case "NewsSourceSelected":
+			updateStruct.NewsSourceSelected = *reqBody.NewsSourceSelected
+
+		case "NewsSourcesOther":
+			updateStruct.NewsSourcesOther = reqBody.NewsSourcesOther
+
+		case "InterestedFaculty":
+			updateStruct.InterestedFaculty = *reqBody.InterestedFaculty
+
+		case "ObjectiveSelected":
+			updateStruct.ObjectiveSelected = *reqBody.ObjectiveSelected
+
+		case "ObjectiveOther":
+			updateStruct.ObjectiveOther = reqBody.ObjectiveOther
+		}
 	}
+
 	updateErr := u.AttendeeRepo.Update(&updateStruct, userId)
 	if updateErr != nil {
 		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
