@@ -39,6 +39,7 @@ func (u *AttendeeUsecaseImpl) PostAttendeesUseCase(c *fiber.Ctx) error {
 	// this wont ever be invalid right?
 	userIdRaw := c.Locals("user_id").(string)
 	userId, err := uuid.Parse(userIdRaw)
+	// userId := uuid.New()
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "Invalid user_id",
@@ -80,15 +81,14 @@ func (u *AttendeeUsecaseImpl) PostAttendeesUseCase(c *fiber.Ctx) error {
 	}
 
 	founded, err2 := u.AttendeeRepository.Upsert(&attendee)
-	if founded {
-		return c.Status(fiber.StatusConflict).JSON(fiber.Map{
-			"error": "Attendee already exists",
-		})
-	}
-
 	if err2 != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "Internal DB error",
+		})
+	}
+	if founded {
+		return c.Status(fiber.StatusConflict).JSON(fiber.Map{
+			"error": "Attendee already exists",
 		})
 	}
 
