@@ -10,6 +10,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
+	"github.com/lib/pq"
 )
 
 type AttendeesUsecase interface {
@@ -226,6 +227,58 @@ func (u *AttendeeUsecaseImpl) PutAttendeesUseCase(c *fiber.Ctx) error {
 	// No update to do if body is empty
 	if (attendee.PutAttendeesRequest{}) == reqBody {
 		return c.SendStatus(fiber.StatusNoContent)
+	}
+
+	// Validate enum fields
+	if reqBody.InterestedFaculty != nil {
+		arr := []string(*reqBody.InterestedFaculty)
+		if !model.FacultiesAreValid(arr) {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+				"error": "Invalid request body; unknown faculty",
+			})
+		}
+	}
+	if reqBody.Province != nil && !model.ProvinceIsValid(*reqBody.Province) {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid request body; unknown province",
+		})
+	}
+	if reqBody.NewsSourceSelected != nil {
+		arr := []string(*reqBody.NewsSourceSelected)
+		if !model.NewsSourcesAreValid(arr) {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+				"error": "Invalid request body; unknown news source",
+			})
+		}
+	}
+	if reqBody.ObjectiveSelected != nil {
+		arr := []string(*reqBody.ObjectiveSelected)
+		if !model.ObjectivesAreValid(arr) {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+				"error": "Invalid request body; unknown objective",
+			})
+		}
+	}
+	if reqBody.StudyLevel != nil && !model.StudyLevelIsValid(*reqBody.StudyLevel) {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid request body; unknown study_level",
+		})
+	}
+
+	// If ObjectiveSelected = ["other"], ObjectiveOther must have value
+	tempOtherObj := pq.StringArray([]string{string(model.OtherObjective)})
+	if reqBody.ObjectiveSelected == &tempOtherObj && reqBody.ObjectiveOther == nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid request body; objective_selected is 'other', but objective_other is not provided",
+		})
+	}
+
+	// If NewsSourceSelected = ["other"], NewsSourcesOther must have value
+	tempOtherNews := pq.StringArray([]string{string(model.OtherNewsSource)})
+	if reqBody.NewsSourceSelected == &tempOtherNews && reqBody.NewsSourcesOther == nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid request body; news_sources_selected is 'other', but news_sources_other is not provided",
+		})
 	}
 
 	// Map request body to attendee entity
