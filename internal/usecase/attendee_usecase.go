@@ -265,19 +265,19 @@ func (u *AttendeeUsecaseImpl) PutAttendeesUseCase(c *fiber.Ctx) error {
 		})
 	}
 
-	// If ObjectiveSelected = ["other"], ObjectiveOther must have value
+	// If ObjectiveSelected = ["อื่น ๆ"], ObjectiveOther must have value
 	tempOtherObj := pq.StringArray([]string{string(model.OtherObjective)})
 	if reqBody.ObjectiveSelected == &tempOtherObj && reqBody.ObjectiveOther == nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid request body; objective_selected is 'other', but objective_other is not provided",
+			"error": "Invalid request body; objective_selected is 'อื่น ๆ', but objective_other is not provided",
 		})
 	}
 
-	// If NewsSourceSelected = ["other"], NewsSourcesOther must have value
+	// If NewsSourceSelected = ["อื่น ๆ"], NewsSourcesOther must have value
 	tempOtherNews := pq.StringArray([]string{string(model.OtherNewsSource)})
 	if reqBody.NewsSourceSelected == &tempOtherNews && reqBody.NewsSourcesOther == nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid request body; news_sources_selected is 'other', but news_sources_other is not provided",
+			"error": "Invalid request body; news_sources_selected is 'อื่น ๆ', but news_sources_other is not provided",
 		})
 	}
 
