@@ -33,7 +33,6 @@ func SetupRoutes(r *fiber.App, authUsecase usecase.AuthUsecase, userUseCase usec
 		{
 			auth.Post("/token", authUsecase.Login)
 		}
-
 		attendees := api.Group("/attendees", authMiddleware)
 		{
 			attendees.Get("/me", attendeeUsecase.GetMyAttendee)
