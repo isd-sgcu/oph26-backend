@@ -5,12 +5,11 @@ import (
 	"oph26-backend/internal/model"
 	"oph26-backend/internal/model/attendee"
 	"oph26-backend/internal/repository"
-	"reflect"
 	"regexp"
 
+	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
-	"github.com/lib/pq"
 )
 
 type AttendeesUsecase interface {
@@ -199,8 +198,15 @@ func (u *AttendeeUsecaseImpl) PutAttendeesUseCase(c *fiber.Ctx) error {
 		})
 	}
 
+	// Parse body and do basic validation e.g., min/max
 	var reqBody attendee.PutAttendeesRequest
 	if err := c.BodyParser(&reqBody); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid request body",
+		})
+	}
+	validate := validator.New()
+	if err := validate.Struct(reqBody); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "Invalid request body",
 		})
@@ -225,7 +231,17 @@ func (u *AttendeeUsecaseImpl) PutAttendeesUseCase(c *fiber.Ctx) error {
 	}
 
 	// No update to do if body is empty
-	if (attendee.PutAttendeesRequest{}) == reqBody {
+	if reqBody.Firstname == nil &&
+		reqBody.Surname == nil &&
+		reqBody.Age == nil &&
+		reqBody.Province == nil &&
+		reqBody.StudyLevel == nil &&
+		reqBody.SchoolName == nil &&
+		reqBody.NewsSourceSelected == nil &&
+		reqBody.NewsSourcesOther == nil &&
+		reqBody.InterestedFaculty == nil &&
+		reqBody.ObjectiveSelected == nil &&
+		reqBody.ObjectiveOther == nil {
 		return c.SendStatus(fiber.StatusNoContent)
 	}
 
@@ -266,60 +282,60 @@ func (u *AttendeeUsecaseImpl) PutAttendeesUseCase(c *fiber.Ctx) error {
 	}
 
 	// If ObjectiveSelected = ["อื่น ๆ"], ObjectiveOther must have value
-	tempOtherObj := pq.StringArray([]string{string(model.OtherObjective)})
-	if reqBody.ObjectiveSelected == &tempOtherObj && reqBody.ObjectiveOther == nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid request body; objective_selected is 'อื่น ๆ', but objective_other is not provided",
-		})
+	if reqBody.ObjectiveSelected != nil {
+		arr := []string(*reqBody.ObjectiveSelected)
+		if len(arr) == 1 && arr[0] == string(model.OtherObjective) && reqBody.ObjectiveOther == nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+				"error": "Invalid request body; objective_selected is 'อื่น ๆ', but objective_other is not provided",
+			})
+		}
 	}
 
 	// If NewsSourceSelected = ["อื่น ๆ"], NewsSourcesOther must have value
-	tempOtherNews := pq.StringArray([]string{string(model.OtherNewsSource)})
-	if reqBody.NewsSourceSelected == &tempOtherNews && reqBody.NewsSourcesOther == nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid request body; news_sources_selected is 'อื่น ๆ', but news_sources_other is not provided",
-		})
+	if reqBody.NewsSourceSelected != nil {
+		arr := []string(*reqBody.NewsSourceSelected)
+		if len(arr) == 1 && arr[0] == string(model.OtherNewsSource) && reqBody.NewsSourcesOther == nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+				"error": "Invalid request body; news_sources_selected is 'อื่น ๆ', but news_sources_other is not provided",
+			})
+		}
 	}
 
 	// Map request body to attendee entity
-	reqType := reflect.TypeOf(reqBody)
 	updateStruct := entity.Attendee{}
 
-	for i := 0; i < reqType.NumField(); i++ {
-		switch reqType.Field(i).Name {
-		case "Firstname":
-			updateStruct.Firstname = *reqBody.Firstname
-
-		case "Surname":
-			updateStruct.Surname = *reqBody.Surname
-
-		case "Age":
-			updateStruct.Age = *reqBody.Age
-
-		case "Province":
-			updateStruct.Province = *reqBody.Province
-
-		case "StudyLevel":
-			updateStruct.StudyLevel = reqBody.StudyLevel
-
-		case "SchoolName":
-			updateStruct.SchoolName = reqBody.SchoolName
-
-		case "NewsSourceSelected":
-			updateStruct.NewsSourceSelected = *reqBody.NewsSourceSelected
-
-		case "NewsSourcesOther":
-			updateStruct.NewsSourcesOther = reqBody.NewsSourcesOther
-
-		case "InterestedFaculty":
-			updateStruct.InterestedFaculty = *reqBody.InterestedFaculty
-
-		case "ObjectiveSelected":
-			updateStruct.ObjectiveSelected = *reqBody.ObjectiveSelected
-
-		case "ObjectiveOther":
-			updateStruct.ObjectiveOther = reqBody.ObjectiveOther
-		}
+	if reqBody.Firstname != nil {
+		updateStruct.Firstname = *reqBody.Firstname
+	}
+	if reqBody.Surname != nil {
+		updateStruct.Surname = *reqBody.Surname
+	}
+	if reqBody.Age != nil {
+		updateStruct.Age = *reqBody.Age
+	}
+	if reqBody.Province != nil {
+		updateStruct.Province = *reqBody.Province
+	}
+	if reqBody.StudyLevel != nil {
+		updateStruct.StudyLevel = reqBody.StudyLevel
+	}
+	if reqBody.SchoolName != nil {
+		updateStruct.SchoolName = reqBody.SchoolName
+	}
+	if reqBody.NewsSourceSelected != nil {
+		updateStruct.NewsSourceSelected = *reqBody.NewsSourceSelected
+	}
+	if reqBody.NewsSourcesOther != nil {
+		updateStruct.NewsSourcesOther = reqBody.NewsSourcesOther
+	}
+	if reqBody.InterestedFaculty != nil {
+		updateStruct.InterestedFaculty = *reqBody.InterestedFaculty
+	}
+	if reqBody.ObjectiveSelected != nil {
+		updateStruct.ObjectiveSelected = *reqBody.ObjectiveSelected
+	}
+	if reqBody.ObjectiveOther != nil {
+		updateStruct.ObjectiveOther = reqBody.ObjectiveOther
 	}
 
 	updateErr := u.AttendeeRepo.Update(&updateStruct, userId)
