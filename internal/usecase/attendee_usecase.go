@@ -340,7 +340,7 @@ func (u *AttendeeUsecaseImpl) PutAttendeesUseCase(c *fiber.Ctx) error {
 
 	updateErr := u.AttendeeRepo.Update(&updateStruct, userId)
 	if updateErr != nil {
-		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "Internal DB error",
 		})
 	}
