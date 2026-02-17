@@ -10,7 +10,7 @@ import (
 
 var startTime = time.Now()
 
-func SetupRoutes(r *fiber.App, authUsecase usecase.AuthUsecase, userUseCase usecase.UserUsecase, attendeeUsecase usecase.AttendeesUsecase, pieceUsecase usecase.PieceUsecase, authMiddleware fiber.Handler) {
+func SetupRoutes(r *fiber.App, authUsecase usecase.AuthUsecase, userUseCase usecase.UserUsecase, attendeeUsecase usecase.AttendeeUsecase, pieceUsecase usecase.PieceUsecase, authMiddleware fiber.Handler) {
 	r.Get("/healthz", func(c *fiber.Ctx) error {
 		uptime := time.Since(startTime).String()
 		return c.JSON(fiber.Map{

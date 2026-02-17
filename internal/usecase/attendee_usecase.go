@@ -12,21 +12,23 @@ import (
 	"github.com/google/uuid"
 )
 
-type AttendeesUsecase interface {
+type AttendeeUsecaseImpl struct {
+	userRepo     repository.UserRepository
+	attendeeRepo repository.AttendeeRepository
+	validate     *validator.Validate
+}
+
+type AttendeeUsecase interface {
 	GetMyAttendee(c *fiber.Ctx) error
 	GetByAttendeeId(c *fiber.Ctx) error
 	PutAttendeesUseCase(c *fiber.Ctx) error
 }
 
-type AttendeeUsecaseImpl struct {
-	UserRepo     repository.UserRepository
-	AttendeeRepo repository.AttendeeRepository
-}
-
-func NewAttendeeUsecase(userRepo repository.UserRepository, attendeeRepo repository.AttendeeRepository) AttendeesUsecase {
+func NewAttendeeUsecase(userRepo repository.UserRepository, attendeeRepo repository.AttendeeRepository) AttendeeUsecase {
 	return &AttendeeUsecaseImpl{
-		UserRepo:     userRepo,
-		AttendeeRepo: attendeeRepo,
+		userRepo:     userRepo,
+		attendeeRepo: attendeeRepo,
+		validate:     validator.New(),
 	}
 }
 
@@ -58,7 +60,7 @@ func (u *AttendeeUsecaseImpl) GetMyAttendee(c *fiber.Ctx) error {
 		})
 	}
 
-	attendee, err := u.AttendeeRepo.FindByUserID(userID)
+	attendee, err := u.attendeeRepo.FindByUserID(userID)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": err.Error(),
@@ -118,7 +120,7 @@ func (u *AttendeeUsecaseImpl) GetByAttendeeId(c *fiber.Ctx) error {
 		})
 	}
 
-	attendee, err := u.AttendeeRepo.FindByTicketCode(ticketCode)
+	attendee, err := u.attendeeRepo.FindByTicketCode(ticketCode)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": err.Error(),
@@ -205,15 +207,14 @@ func (u *AttendeeUsecaseImpl) PutAttendeesUseCase(c *fiber.Ctx) error {
 			"error": "Invalid request body",
 		})
 	}
-	validate := validator.New()
-	if err := validate.Struct(reqBody); err != nil {
+	if err := u.validate.Struct(reqBody); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "Invalid request body",
 		})
 	}
 
 	// User must exist and cannot be staff
-	userFromDB, err := u.UserRepo.FindByEmail(userEmail)
+	userFromDB, err := u.userRepo.FindByEmail(userEmail)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "Internal DB error",
@@ -338,7 +339,7 @@ func (u *AttendeeUsecaseImpl) PutAttendeesUseCase(c *fiber.Ctx) error {
 		updateStruct.ObjectiveOther = reqBody.ObjectiveOther
 	}
 
-	updateErr := u.AttendeeRepo.Update(&updateStruct, userId)
+	updateErr := u.attendeeRepo.Update(&updateStruct, userId)
 	if updateErr != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "Internal DB error",
