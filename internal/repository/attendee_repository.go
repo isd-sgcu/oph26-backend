@@ -48,8 +48,17 @@ func (r *AttendeeRepositoryImpl) FindByTicketCode(ticketCode string) (*entity.At
 }
 
 func (r *AttendeeRepositoryImpl) Update(attendee *entity.Attendee, userId uuid.UUID) error {
-	return r.DB.Model(&entity.Attendee{}).
+	res := r.DB.Model(&entity.Attendee{}).
 		Where(&entity.Attendee{UserID: userId}).
-		Updates(attendee).
-		Error
+		Updates(attendee)
+
+	if res.Error != nil {
+		return res.Error
+	}
+
+	if res.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
+	}
+
+	return nil
 }
