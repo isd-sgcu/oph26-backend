@@ -10,6 +10,7 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
 type AttendeeUsecaseImpl struct {
@@ -220,9 +221,15 @@ func (u *AttendeeUsecaseImpl) PutAttendeesUseCase(c *fiber.Ctx) error {
 			"error": "Internal DB error",
 		})
 	}
-	if userFromDB == nil {
+	if userFromDB == nil || userFromDB.AttendeeId == nil {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
 			"error": "Attendee not found",
+		})
+	}
+	// The ID of user fetched by email must match the user_id from the JWT
+	if userFromDB.ID != userId {
+		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
+			"error": "Token user does not match attendee",
 		})
 	}
 	if userFromDB.StaffId != nil {
@@ -341,6 +348,12 @@ func (u *AttendeeUsecaseImpl) PutAttendeesUseCase(c *fiber.Ctx) error {
 
 	updateErr := u.attendeeRepo.Update(&updateStruct, userId)
 	if updateErr != nil {
+		if updateErr == gorm.ErrRecordNotFound {
+			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+				"error": "Attendee not found",
+			})
+		}
+
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "Internal DB error",
 		})
