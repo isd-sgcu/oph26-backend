@@ -24,9 +24,9 @@ func main() {
 
 	// Init Dependencies
 	userRepo := repository.NewUserRepository(config.DB)
+	userUsecase := usecase.NewUserUsecase(userRepo)
 	attendeeRepo := repository.NewAttendeeRepository(config.DB)
-	userUseCase := usecase.NewUserUsecase(userRepo)
-	attendeeUseCase := usecase.NewAttendeeUsecase(userRepo, attendeeRepo)
+	attendeeUsecase := usecase.NewAttendeeUsecase(userRepo, attendeeRepo)
 	authUsecase := usecase.NewAuthUsecase(userRepo, cfg.GoogleClientID, cfg.JWTSecret)
 	pieceRepo := repository.NewPieceRepository(config.DB)
 	pieceUsecase := usecase.NewPieceUsecase(pieceRepo)
@@ -34,7 +34,7 @@ func main() {
 	// Init Middleware
 	authMiddleware := middleware.NewAuthMiddleware(cfg.JWTSecret)
 
-	route.SetupRoutes(r, authUsecase, userUseCase, attendeeUseCase, pieceUsecase, authMiddleware)
+	route.SetupRoutes(r, authUsecase, userUsecase, attendeeUsecase, pieceUsecase, authMiddleware)
 
 	log.Fatal(r.Listen(":8080"))
 }
