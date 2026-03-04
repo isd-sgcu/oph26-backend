@@ -165,7 +165,7 @@ const charset = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 func generatePieceCode() (string, error) {
 	b := make([]byte, 6)
 	for i := range b {
-		index, err := rand.Int(rand.Reader, big.NewInt(6))
+		index, err := rand.Int(rand.Reader, big.NewInt(int64(len(charset))))
 		if err != nil {
 			return "", err
 		}
