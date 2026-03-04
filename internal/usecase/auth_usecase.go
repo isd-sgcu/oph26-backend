@@ -18,16 +18,18 @@ type AuthUsecase interface {
 }
 
 type AuthUsecaseImpl struct {
-	UserRepository repository.UserRepository
-	GoogleClientID string
-	JWTSecret      string
+	UserRepository  repository.UserRepository
+	StaffRepository repository.StaffRepository
+	GoogleClientID  string
+	JWTSecret       string
 }
 
-func NewAuthUsecase(userRepository repository.UserRepository, googleClientID string, jwtSecret string) AuthUsecase {
+func NewAuthUsecase(userRepository repository.UserRepository, staffRepository repository.StaffRepository, googleClientID string, jwtSecret string) AuthUsecase {
 	return &AuthUsecaseImpl{
-		UserRepository: userRepository,
-		GoogleClientID: googleClientID,
-		JWTSecret:      jwtSecret,
+		UserRepository:  userRepository,
+		StaffRepository: staffRepository,
+		GoogleClientID:  googleClientID,
+		JWTSecret:       jwtSecret,
 	}
 }
 
@@ -60,14 +62,33 @@ func (u *AuthUsecaseImpl) Login(c *fiber.Ctx) error {
 	}
 
 	if user == nil {
-		user = &entity.User{
-			Email: email,
-			Role:  "user", // Default role
-		}
-		if err := u.UserRepository.Create(user); err != nil {
+		// Find user in staff database by email, if not found create new user with default role
+		staffUser, err := u.StaffRepository.FindByEmail(email)
+		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 				"error": err.Error(),
 			})
+		}
+		if staffUser != nil {
+			user = &entity.User{
+				Email: email,
+				Role:  "staff",
+			}
+			if err := u.UserRepository.Create(user); err != nil {
+				return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+					"error": err.Error(),
+				})
+			}
+		} else {
+			user = &entity.User{
+				Email: email,
+				Role:  "user", // Default role
+			}
+			if err := u.UserRepository.Create(user); err != nil {
+				return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+					"error": err.Error(),
+				})
+			}
 		}
 	}
 
