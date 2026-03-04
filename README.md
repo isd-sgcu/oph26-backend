@@ -1,7 +1,89 @@
 # oph26-backend
 
 ## Architecture Overview
+
 This backend is built using [Go](https://go.dev/) and [Fiber](https://gofiber.io/) web framework, with [GORM](https://gorm.io/) as the ORM for database interactions. Please refer to the [Golang Clean Architecture](https://github.com/khannedy/golang-clean-architecture) for more details on the architectural patterns used.
+
+## 🛠️ Tech Stack
+
+- **Language**: Go
+- **Web Framework**: Fiber
+- **ORM**: GORM
+- **Database**: PostgreSQL
+
+## 🧑‍💻 Local development
+
+1. **Clone the repository**:
+   ```bash
+   git clone
+   ```
+
+````
+2. **Navigate to the project directory**:
+   ```bash
+   cd oph26-backend
+````
+
+3. **Set up environment variables**:
+   Copy the `.env.template` file to `.env` and fill in the required values:
+
+   ```bash
+   cp .env.example .env
+   ```
+
+4. **Run the application**:
+   ```bash
+   go run main.go
+   ```
+
+### Mocking Google Token Validation in Development
+
+In development mode, you can bypass Google token validation for easier testing. To do this, set the `APP_ENV` variable in your `.env` file to `development`:
+
+```env
+APP_ENV=development
+```
+
+When `APP_ENV` is set to `development`, the authentication middleware will allow you to use a JWT token with any claims, and it will log the claims for debugging purposes. This is intended for development and testing only, and should never be used in production.
+
+You can generate a JWT token to pass to `/api/auth/token` endpoint for testing using this command:
+
+```terminal
+$ go run cmd/script/generate_mock_google_token.go -email test@example.com
+Email: attendee@example.com
+Mock Google OAuth Token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImF0dGVuZGVlQGV4YW1wbGUuY29tIn0.kcpt1G9BDldx615oC-9YYk9gH1K9ojWZ4WlkMAXqzh0
+```
+
+You'll get a token that you can send to `/api/auth/token` to authenticate as `test@example.com`. The token will be accepted in development mode, and the claims will be logged for debugging.
+
+Here is an example request using JavaScript's `fetch` API:
+
+```javascript
+const response = await fetch("http://localhost:8080/api/auth/token", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    idToken: "eyJhbGciOi...AXqzh0", // Replace with your generated token
+  }),
+});
+
+const data = await response.json();
+console.log(data);
+// {
+//  "accessToken": "eyJhbGciOi...",
+//  "refreshToken": "eyJhbGciOi..."
+// }
+// These tokens can then be used to authenticate subsequent requests to protected endpoints in development mode using the Authorization header:
+fetch("http://localhost:8080/api/protected-endpoint", {
+  headers: {
+    Authorization: "Bearer eyJhbGciOi...", // Replace with the access token you received
+  },
+});
+```
+
+Access tokens is valid for 15 minutes, and refresh tokens is valid for 7 days. You can use the refresh token to get a new access token when it expires by sending a request to `/api/auth/refresh` endpoint.
 
 ---
 
@@ -10,12 +92,10 @@ This backend is built using [Go](https://go.dev/) and [Fiber](https://gofiber.io
 The `main` branch is protected with the following rules:
 
 1. **Require a pull request before merging**
-
    - Direct pushes to `main` are blocked.
    - All changes must be submitted via pull request (PR).
 
 2. **Require branches to be up to date before merging**
-
    - The PR branch must be rebased or merged with the latest `main` before merging.
 
 3. **No bypass allowed**
@@ -30,13 +110,17 @@ These rules ensure `main` always contains production-ready, tested, and reviewed
 Follow this format:
 
 ```
+
 <name>/<type>/<short-description>
+
 ```
 
 ### Example:
 
 ```
+
 arka/feat/resume-button
+
 ```
 
 ### Types:
@@ -53,8 +137,8 @@ arka/feat/resume-button
 - `anna/refactor/api-service`
 - `jay/remove/old-api-endpoints`
 
-
 ## Database ER Diagram
+
 ```mermaid
 erDiagram
     direction TB
