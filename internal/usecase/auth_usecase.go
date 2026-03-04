@@ -3,6 +3,7 @@ package usecase
 import (
 	"context"
 	"fmt"
+	"log"
 	"oph26-backend/internal/entity"
 	"oph26-backend/internal/model"
 	"oph26-backend/internal/repository"
@@ -114,7 +115,7 @@ func (u *AuthUsecaseImpl) Login(c *fiber.Ctx) error {
 		Name:     "refresh_token",
 		Value:    refreshToken,
 		HTTPOnly: true,
-		Secure:   true, // TODO: Set to false in dev if needed found in env?
+		Secure:   u.AppEnv == "production", // Only set Secure flag in production
 		SameSite: "Strict",
 		MaxAge:   60 * 60 * 24 * 7, // 7 days
 	})
@@ -126,18 +127,36 @@ func (u *AuthUsecaseImpl) Login(c *fiber.Ctx) error {
 }
 
 func (u *AuthUsecaseImpl) validateGoogleToken(ctx context.Context, token string) (*idtoken.Payload, error) {
+	if u.AppEnv == "development" {
+		// In development, allow user to bypass Google token validation for easier testing.
+		// Token is jwt but we won't validate it, just parse the claims for email.
+		jwtToken, err := jwt.Parse(token, func(token *jwt.Token) (any, error) {
+			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+				return nil, fmt.Errorf("(dev) unexpected signing method: %v", token.Header["alg"])
+			}
+			return []byte(u.JWTSecret), nil
+		})
 
-	if u.GoogleClientID == "" {
-		// Mock for now if no client ID provided in env
-		// In production this should be an error or stricter.
-		// For the sake of progress in this environment:
+		if err != nil || !jwtToken.Valid {
+			return nil, fmt.Errorf("(dev) invalid token: %v", err)
+		}
+
+		claims, ok := jwtToken.Claims.(jwt.MapClaims)
+		if !ok {
+			return nil, fmt.Errorf("(dev) invalid token claims")
+		}
+
+		log.Printf("(dev) bypassing Google token validation, claims: %v", claims)
+
 		return &idtoken.Payload{
-			Claims: map[string]interface{}{
-				"email": "test@example.com",
+			Claims: map[string]any{
+				"email": claims["email"],
 			},
+			Audience: "development-audience",
 		}, nil
 	}
 
+	// In production, validate the token properly against Google's OAuth2 service.
 	return idtoken.Validate(ctx, token, u.GoogleClientID)
 }
 
