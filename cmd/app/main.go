@@ -34,7 +34,8 @@ func main() {
 	// Init Dependencies
 	userRepo := repository.NewUserRepository(config.DB)
 	staffRepo := repository.NewStaffRepository(config.DB)
-	authUsecase := usecase.NewAuthUsecase(userRepo, staffRepo, cfg.GoogleClientID, cfg.JWTSecret, cfg.AppEnv)
+	refreshTokenRepo := repository.NewRefreshTokenRepository(config.DB)
+	authUsecase := usecase.NewAuthUsecase(userRepo, staffRepo, refreshTokenRepo, cfg.GoogleClientID, cfg.JWTSecret, cfg.AppEnv)
 
 	attendeeRepo := repository.NewAttendeeRepository(config.DB)
 	attendeeUsecase := usecase.NewAttendeeUsecase(attendeeRepo)
