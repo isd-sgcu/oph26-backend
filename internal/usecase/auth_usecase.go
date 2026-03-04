@@ -11,6 +11,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 	"google.golang.org/api/idtoken"
 )
 
@@ -22,20 +23,22 @@ type AuthUsecase interface {
 }
 
 type AuthUsecaseImpl struct {
-	UserRepository  repository.UserRepository
-	StaffRepository repository.StaffRepository
-	GoogleClientID  string
-	JWTSecret       string
-	AppEnv          string
+	UserRepository         repository.UserRepository
+	StaffRepository        repository.StaffRepository
+	RefreshTokenRepository repository.RefreshTokenRepository
+	GoogleClientID         string
+	JWTSecret              string
+	AppEnv                 string
 }
 
-func NewAuthUsecase(userRepository repository.UserRepository, staffRepository repository.StaffRepository, googleClientID string, jwtSecret string, appEnv string) AuthUsecase {
+func NewAuthUsecase(userRepository repository.UserRepository, staffRepository repository.StaffRepository, refreshTokenRepository repository.RefreshTokenRepository, googleClientID string, jwtSecret string, appEnv string) AuthUsecase {
 	return &AuthUsecaseImpl{
-		UserRepository:  userRepository,
-		StaffRepository: staffRepository,
-		GoogleClientID:  googleClientID,
-		JWTSecret:       jwtSecret,
-		AppEnv:          appEnv,
+		UserRepository:         userRepository,
+		StaffRepository:        staffRepository,
+		RefreshTokenRepository: refreshTokenRepository,
+		GoogleClientID:         googleClientID,
+		JWTSecret:              jwtSecret,
+		AppEnv:                 appEnv,
 	}
 }
 
@@ -106,10 +109,21 @@ func (u *AuthUsecaseImpl) Login(c *fiber.Ctx) error {
 		})
 	}
 
-	refreshToken, err := u.generateRefreshToken(user)
+	refreshToken, expiresAt, err := u.generateRefreshToken(user)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": err.Error(),
+		})
+	}
+
+	if err := u.RefreshTokenRepository.Store(&entity.RefreshToken{
+		UserID:    user.ID,
+		Token:     refreshToken,
+		ExpiresAt: expiresAt,
+		IsRevoked: false,
+	}); err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to persist refresh token",
 		})
 	}
 
@@ -176,13 +190,18 @@ func (u *AuthUsecaseImpl) generateAccessToken(user *entity.User) (string, error)
 	return token.SignedString([]byte(u.JWTSecret))
 }
 
-func (u *AuthUsecaseImpl) generateRefreshToken(user *entity.User) (string, error) {
+func (u *AuthUsecaseImpl) generateRefreshToken(user *entity.User) (string, time.Time, error) {
+	expiresAt := time.Now().Add(time.Hour * 24 * 7)
 	claims := jwt.MapClaims{
 		"user_id": user.ID,
-		"exp":     time.Now().Add(time.Hour * 24 * 7).Unix(), // 7 days
+		"exp":     expiresAt.Unix(), // 7 days
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString([]byte(u.JWTSecret))
+	tokenString, err := token.SignedString([]byte(u.JWTSecret))
+	if err != nil {
+		return "", time.Time{}, err
+	}
+	return tokenString, expiresAt, nil
 }
 
 func (u *AuthUsecaseImpl) GetCurrentUser(c *fiber.Ctx) error {
@@ -194,10 +213,15 @@ func (u *AuthUsecaseImpl) GetCurrentUser(c *fiber.Ctx) error {
 		})
 	}
 
-	userID := userIDValue.(string)
+	userID, ok := userIDValue.(uuid.UUID)
+	if !ok {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": "Unauthorized: Invalid user_id in token",
+		})
+	}
 
 	// Fetch user from database
-	user, err := u.UserRepository.FindByID(userID)
+	user, err := u.UserRepository.FindByID(userID.String())
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": err.Error(),
@@ -237,6 +261,19 @@ func (u *AuthUsecaseImpl) RefreshToken(c *fiber.Ctx) error {
 	if err != nil || !token.Valid {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 			"error": "Unauthorized: Invalid or expired refresh token",
+		})
+	}
+
+	isActive, err := u.RefreshTokenRepository.IsActive(refreshToken)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to validate refresh token",
+		})
+	}
+
+	if !isActive {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": "Unauthorized: Refresh token revoked or unknown",
 		})
 	}
 
@@ -283,6 +320,13 @@ func (u *AuthUsecaseImpl) RefreshToken(c *fiber.Ctx) error {
 }
 
 func (u *AuthUsecaseImpl) SignOut(c *fiber.Ctx) error {
+	refreshToken := c.Cookies("refresh_token")
+	if refreshToken != "" {
+		if err := u.RefreshTokenRepository.Revoke(refreshToken); err != nil {
+			log.Printf("failed to revoke refresh token: %v", err)
+		}
+	}
+
 	// Clear the refresh_token cookie
 	c.Cookie(&fiber.Cookie{
 		Name:     "refresh_token",
