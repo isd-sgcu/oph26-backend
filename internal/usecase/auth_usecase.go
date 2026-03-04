@@ -22,14 +22,16 @@ type AuthUsecaseImpl struct {
 	StaffRepository repository.StaffRepository
 	GoogleClientID  string
 	JWTSecret       string
+	AppEnv          string
 }
 
-func NewAuthUsecase(userRepository repository.UserRepository, staffRepository repository.StaffRepository, googleClientID string, jwtSecret string) AuthUsecase {
+func NewAuthUsecase(userRepository repository.UserRepository, staffRepository repository.StaffRepository, googleClientID string, jwtSecret string, appEnv string) AuthUsecase {
 	return &AuthUsecaseImpl{
 		UserRepository:  userRepository,
 		StaffRepository: staffRepository,
 		GoogleClientID:  googleClientID,
 		JWTSecret:       jwtSecret,
+		AppEnv:          appEnv,
 	}
 }
 
@@ -124,7 +126,6 @@ func (u *AuthUsecaseImpl) Login(c *fiber.Ctx) error {
 }
 
 func (u *AuthUsecaseImpl) validateGoogleToken(ctx context.Context, token string) (*idtoken.Payload, error) {
-	// TODO: Recheck this function before production
 
 	if u.GoogleClientID == "" {
 		// Mock for now if no client ID provided in env
