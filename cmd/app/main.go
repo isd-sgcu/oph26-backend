@@ -22,7 +22,7 @@ func main() {
 
 	switch cfg.AppEnv {
 	case "production":
-		log.Println("Running in production mode")
+		log.Println("Running in PRODUCTION mode")
 	case "development":
 		log.Println("Running in development mode")
 	default:
