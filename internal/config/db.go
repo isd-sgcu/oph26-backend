@@ -1,7 +1,7 @@
 package config
 
 import (
-	"fmt"
+	"log"
 	"oph26-backend/internal/entity"
 
 	"gorm.io/driver/postgres"
@@ -15,19 +15,19 @@ func InitDB(cfg *Config) {
 	dsn := cfg.DataBaseURL
 	DB, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
-		fmt.Println("Failed to connect to database:", err)
+		log.Fatal("Failed to connect to database:", err)
 		return
 	}
 	// Enable uuid-ossp extension for UUID generation
 	err = DB.Exec("CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\";").Error
 	if err != nil {
-		fmt.Println("Failed to create uuid-ossp extension:", err)
+		log.Fatal("Failed to create uuid-ossp extension:", err)
 		return
 	}
 	err = DB.AutoMigrate(&entity.User{}, &entity.Score{}, &entity.Leaderboard{}, &entity.Staff{}, &entity.Attendee{}, &entity.MyPiece{}, &entity.CollectedPiece{})
 	if err != nil {
-		fmt.Println("Failed to migrate database:", err)
+		log.Fatal("Failed to migrate database:", err)
 		return
 	}
-	fmt.Println("Database connection established and migrated")
+	log.Println("Database connection established and migrated")
 }
