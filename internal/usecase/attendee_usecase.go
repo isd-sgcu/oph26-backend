@@ -68,7 +68,7 @@ func (u *AttendeeUsecaseImpl) PostAttendeesUseCase(c *fiber.Ctx) error {
 
 	if !model.NewsSourcesAreValid(request.NewsSourceSelected) {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid request body; unknowns new source",
+			"error": "Invalid request body; unknown news source",
 		})
 	}
 
