@@ -46,7 +46,13 @@ func NewAuthMiddleware(jwtSecret string) fiber.Handler {
 		}
 
 		// Extract and parse claims
-		userID, err := uuid.Parse(claims["user_id"].(string))
+		userIDValue, ok := claims["user_id"].(string)
+		if !ok {
+			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+				"error": "Unauthorized: Missing user_id claim",
+			})
+		}
+		userID, err := uuid.Parse(userIDValue)
 		if err != nil {
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 				"error": "Unauthorized: Invalid user_id format",
