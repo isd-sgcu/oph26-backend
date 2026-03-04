@@ -20,6 +20,15 @@ func main() {
 	cfg := config.LoadEnv()
 	config.InitDB(cfg)
 
+	switch cfg.AppEnv {
+	case "production":
+		log.Println("Running in production mode")
+	case "development":
+		log.Println("Running in development mode")
+	default:
+		log.Printf("Running in unknown mode: %s\n", cfg.AppEnv)
+	}
+
 	r := fiber.New()
 
 	// Init Dependencies
