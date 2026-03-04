@@ -121,12 +121,14 @@ func (u *AuthUsecaseImpl) validateGoogleToken(ctx context.Context, token string)
 
 func (u *AuthUsecaseImpl) generateAccessToken(user *entity.User) (string, error) {
 	claims := jwt.MapClaims{
-		"iss":     "isd-oph26-backend",
-		"sub":     user.ID,
-		"user_id": user.ID,
-		"email":   user.Email,
-		"role":    user.Role,
-		"exp":     time.Now().Add(time.Minute * 15).Unix(), // 15 minutes
+		"iss":         "isd-oph26-backend",
+		"sub":         user.ID,
+		"user_id":     user.ID,
+		"email":       user.Email,
+		"role":        user.Role,
+		"attendee_id": user.AttendeeId,
+		"staff_id":    user.StaffId,
+		"exp":         time.Now().Add(time.Minute * 15).Unix(), // 15 minutes
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	return token.SignedString([]byte(u.JWTSecret))

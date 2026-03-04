@@ -5,6 +5,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 )
 
 func NewAuthMiddleware(jwtSecret string) fiber.Handler {
@@ -44,10 +45,54 @@ func NewAuthMiddleware(jwtSecret string) fiber.Handler {
 			})
 		}
 
-		// Set claims to locals
-		c.Locals("user_id", claims["user_id"])
-		c.Locals("email", claims["email"])
-		c.Locals("role", claims["role"])
+		// Extract and parse claims
+		userID, err := uuid.Parse(claims["user_id"].(string))
+		if err != nil {
+			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+				"error": "Unauthorized: Invalid user_id format",
+			})
+		}
+
+		email, ok := claims["email"].(string)
+		if !ok {
+			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+				"error": "Unauthorized: Invalid email claim",
+			})
+		}
+
+		role, ok := claims["role"].(string)
+		if !ok {
+			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+				"error": "Unauthorized: Invalid role claim",
+			})
+		}
+
+		// Parse optional UUID fields
+		var attendeeID *uuid.UUID
+		var staffID *uuid.UUID
+
+		if attendeeIDClaim, ok := claims["attendee_id"]; ok && attendeeIDClaim != nil {
+			if attendeeIDStr, ok := attendeeIDClaim.(string); ok && attendeeIDStr != "" {
+				if parsedID, err := uuid.Parse(attendeeIDStr); err == nil {
+					attendeeID = &parsedID
+				}
+			}
+		}
+
+		if staffIDClaim, ok := claims["staff_id"]; ok && staffIDClaim != nil {
+			if staffIDStr, ok := staffIDClaim.(string); ok && staffIDStr != "" {
+				if parsedID, err := uuid.Parse(staffIDStr); err == nil {
+					staffID = &parsedID
+				}
+			}
+		}
+
+		// Store flattened user information in locals
+		c.Locals("user_id", userID)
+		c.Locals("email", email)
+		c.Locals("role", role)
+		c.Locals("attendee_id", attendeeID)
+		c.Locals("staff_id", staffID)
 
 		return c.Next()
 	}
