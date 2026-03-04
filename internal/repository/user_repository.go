@@ -9,6 +9,7 @@ import (
 
 type UserRepository interface {
 	FindByEmail(email string) (*entity.User, error)
+	FindByID(id string) (*entity.User, error)
 	Create(user *entity.User) error
 	Update(user *entity.User) error
 }
@@ -24,6 +25,17 @@ func NewUserRepository(db *gorm.DB) UserRepository {
 func (r *UserRepositoryImpl) FindByEmail(email string) (*entity.User, error) {
 	var user entity.User
 	if err := r.DB.Where("email = ?", email).First(&user).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &user, nil
+}
+
+func (r *UserRepositoryImpl) FindByID(id string) (*entity.User, error) {
+	var user entity.User
+	if err := r.DB.Where("id = ?", id).First(&user).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil
 		}

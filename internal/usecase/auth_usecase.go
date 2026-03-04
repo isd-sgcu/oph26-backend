@@ -16,6 +16,9 @@ import (
 
 type AuthUsecase interface {
 	Login(c *fiber.Ctx) error
+	GetCurrentUser(c *fiber.Ctx) error
+	RefreshToken(c *fiber.Ctx) error
+	SignOut(c *fiber.Ctx) error
 }
 
 type AuthUsecaseImpl struct {
@@ -131,10 +134,8 @@ func (u *AuthUsecaseImpl) validateGoogleToken(ctx context.Context, token string)
 		// In development, allow user to bypass Google token validation for easier testing.
 		// Token is jwt but we won't validate it, just parse the claims for email.
 		jwtToken, err := jwt.Parse(token, func(token *jwt.Token) (any, error) {
-			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-				return nil, fmt.Errorf("(dev) unexpected signing method: %v", token.Header["alg"])
-			}
-			return []byte(u.JWTSecret), nil
+			// We won't validate the signature in development, so just return a dummy key.
+			return []byte("dummy"), nil
 		})
 
 		if err != nil || !jwtToken.Valid {
@@ -182,4 +183,115 @@ func (u *AuthUsecaseImpl) generateRefreshToken(user *entity.User) (string, error
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	return token.SignedString([]byte(u.JWTSecret))
+}
+
+func (u *AuthUsecaseImpl) GetCurrentUser(c *fiber.Ctx) error {
+	// Extract user_id from context (set by auth middleware)
+	userIDValue := c.Locals("user_id")
+	if userIDValue == nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": "Unauthorized: Missing user_id in token",
+		})
+	}
+
+	userID := userIDValue.(string)
+
+	// Fetch user from database
+	user, err := u.UserRepository.FindByID(userID)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": err.Error(),
+		})
+	}
+
+	if user == nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+			"error": "User not found",
+		})
+	}
+
+	return c.JSON(&model.UserResponse{
+		ID:    user.ID.String(),
+		Email: user.Email,
+		Role:  user.Role,
+	})
+}
+
+func (u *AuthUsecaseImpl) RefreshToken(c *fiber.Ctx) error {
+	// Get refresh token from cookie
+	refreshToken := c.Cookies("refresh_token")
+	if refreshToken == "" {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": "Unauthorized: Missing refresh token",
+		})
+	}
+
+	// Validate refresh token
+	token, err := jwt.Parse(refreshToken, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+		}
+		return []byte(u.JWTSecret), nil
+	})
+
+	if err != nil || !token.Valid {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": "Unauthorized: Invalid or expired refresh token",
+		})
+	}
+
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": "Unauthorized: Invalid token claims",
+		})
+	}
+
+	// Extract user_id from refresh token claims
+	userID := claims["user_id"]
+	if userID == nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": "Unauthorized: Missing user_id in refresh token",
+		})
+	}
+
+	// Fetch user from database
+	user, err := u.UserRepository.FindByID(userID.(string))
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": err.Error(),
+		})
+	}
+
+	if user == nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": "User not found",
+		})
+	}
+
+	// Generate new access token
+	accessToken, err := u.generateAccessToken(user)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": err.Error(),
+		})
+	}
+
+	return c.JSON(&model.TokenResponse{
+		AccessToken: accessToken,
+	})
+}
+
+func (u *AuthUsecaseImpl) SignOut(c *fiber.Ctx) error {
+	// Clear the refresh_token cookie
+	c.Cookie(&fiber.Cookie{
+		Name:     "refresh_token",
+		Value:    "",
+		HTTPOnly: true,
+		Secure:   u.AppEnv == "production",
+		SameSite: "Strict",
+		MaxAge:   -1, // Immediately delete the cookie
+	})
+
+	return c.SendStatus(fiber.StatusNoContent)
 }

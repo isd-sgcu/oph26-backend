@@ -32,6 +32,9 @@ func SetupRoutes(r *fiber.App, authUsecase usecase.AuthUsecase, attendeeUsecase 
 		auth := api.Group("/auth")
 		{
 			auth.Post("/token", authUsecase.Login)
+			auth.Get("/me", authMiddleware, authUsecase.GetCurrentUser)
+			auth.Post("/refresh", authUsecase.RefreshToken)
+			auth.Post("/signOut", authMiddleware, authUsecase.SignOut)
 		}
 
 		attendees := api.Group("/attendees", authMiddleware)
