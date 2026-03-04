@@ -80,7 +80,7 @@ func (u *AttendeeUsecaseImpl) PostAttendeesUseCase(c *fiber.Ctx) error {
 
 	if !model.ObjectivesAreValid(request.ObjectiveSelected) {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid request body; unknowns objective",
+			"error": "Invalid request body; unknown objective",
 		})
 	}
 
