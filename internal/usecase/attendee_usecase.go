@@ -6,6 +6,7 @@ import (
 	"oph26-backend/internal/model/attendee"
 	"oph26-backend/internal/repository"
 	"regexp"
+	"slices"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
@@ -274,6 +275,12 @@ func (u *AttendeeUsecaseImpl) PutAttendeesUseCase(c *fiber.Ctx) error {
 				"error": "Invalid request body; unknown news source",
 			})
 		}
+		// If NewsSourceSelected has "อื่น ๆ", NewsSourcesOther must have value
+		if slices.Contains(arr, string(model.OtherNewsSource)) && reqBody.NewsSourcesOther == nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+				"error": "Invalid request body; news_sources_selected is 'อื่น ๆ', but news_sources_other is not provided",
+			})
+		}
 	}
 	if reqBody.ObjectiveSelected != nil {
 		arr := []string(*reqBody.ObjectiveSelected)
@@ -282,31 +289,17 @@ func (u *AttendeeUsecaseImpl) PutAttendeesUseCase(c *fiber.Ctx) error {
 				"error": "Invalid request body; unknown objective",
 			})
 		}
-	}
-	if reqBody.StudyLevel != nil && !model.StudyLevelIsValid(*reqBody.StudyLevel) {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid request body; unknown study_level",
-		})
-	}
-
-	// If ObjectiveSelected = ["อื่น ๆ"], ObjectiveOther must have value
-	if reqBody.ObjectiveSelected != nil {
-		arr := []string(*reqBody.ObjectiveSelected)
-		if len(arr) == 1 && arr[0] == string(model.OtherObjective) && reqBody.ObjectiveOther == nil {
+		// If ObjectiveSelected has "อื่น ๆ", ObjectiveOther must have value
+		if slices.Contains(arr, string(model.OtherObjective)) && reqBody.ObjectiveOther == nil {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 				"error": "Invalid request body; objective_selected is 'อื่น ๆ', but objective_other is not provided",
 			})
 		}
 	}
-
-	// If NewsSourceSelected = ["อื่น ๆ"], NewsSourcesOther must have value
-	if reqBody.NewsSourceSelected != nil {
-		arr := []string(*reqBody.NewsSourceSelected)
-		if len(arr) == 1 && arr[0] == string(model.OtherNewsSource) && reqBody.NewsSourcesOther == nil {
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-				"error": "Invalid request body; news_sources_selected is 'อื่น ๆ', but news_sources_other is not provided",
-			})
-		}
+	if reqBody.StudyLevel != nil && !model.StudyLevelIsValid(*reqBody.StudyLevel) {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid request body; unknown study_level",
+		})
 	}
 
 	// Map request body to attendee entity
