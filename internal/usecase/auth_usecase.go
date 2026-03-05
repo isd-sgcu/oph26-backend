@@ -147,14 +147,10 @@ func (u *AuthUsecaseImpl) validateGoogleToken(ctx context.Context, token string)
 	if u.AppEnv == "development" {
 		// In development, allow user to bypass Google token validation for easier testing.
 		// Token is jwt but we won't validate it, just parse the claims for email.
-		jwtToken, err := jwt.Parse(token, func(token *jwt.Token) (any, error) {
+		jwtToken, _ := jwt.Parse(token, func(token *jwt.Token) (any, error) {
 			// We won't validate the signature in development, so just return a dummy key.
 			return []byte("dummy"), nil
 		})
-
-		if err != nil || !jwtToken.Valid {
-			return nil, fmt.Errorf("(dev) invalid token: %v", err)
-		}
 
 		claims, ok := jwtToken.Claims.(jwt.MapClaims)
 		if !ok {
