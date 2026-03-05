@@ -26,7 +26,7 @@ func (u *AttendeesUsecaseImpl) GetMyAttendee(c *fiber.Ctx) error {
 	role, ok := c.Locals("role").(string)
 	if !ok {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "Internal Server Error",
+			"error": "Failed to retrieve user role from context",
 		})
 	}
 	// TODO: Auth here
@@ -39,7 +39,7 @@ func (u *AttendeesUsecaseImpl) GetMyAttendee(c *fiber.Ctx) error {
 	userIDStr, ok := c.Locals("user_id").(string)
 	if !ok {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "Internal Server Error",
+			"error": "Failed to retrieve user id from context",
 		})
 	}
 
@@ -100,7 +100,7 @@ func (u *AttendeesUsecaseImpl) GetByAttendeeId(c *fiber.Ctx) error {
 	role, ok := c.Locals("role").(string)
 	if !ok {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "Internal Server Error",
+			"error": "Failed to retrieve user role from context",
 		})
 	}
 	// TODO: Auth here
