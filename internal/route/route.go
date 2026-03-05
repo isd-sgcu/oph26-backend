@@ -10,7 +10,7 @@ import (
 
 var startTime = time.Now()
 
-func SetupRoutes(r *fiber.App, authUsecase usecase.AuthUsecase, attendeeUsecase usecase.AttendeesUsecase, authMiddleware fiber.Handler) {
+func SetupRoutes(r *fiber.App, authUsecase usecase.AuthUsecase, attendeeUsecase usecase.AttendeesUsecase, authMiddleware fiber.Handler, rateLimitMiddleware fiber.Handler) {
 	r.Get("/healthz", func(c *fiber.Ctx) error {
 		uptime := time.Since(startTime).String()
 		return c.JSON(fiber.Map{
@@ -31,10 +31,10 @@ func SetupRoutes(r *fiber.App, authUsecase usecase.AuthUsecase, attendeeUsecase 
 
 		auth := api.Group("/auth")
 		{
-			auth.Post("/token", authUsecase.Login)
-			auth.Get("/me", authMiddleware, authUsecase.GetCurrentUser)
-			auth.Post("/refresh", authUsecase.RefreshToken)
-			auth.Post("/signOut", authMiddleware, authUsecase.SignOut)
+			auth.Post("/token", rateLimitMiddleware, authUsecase.Login)
+			auth.Get("/me", rateLimitMiddleware, authMiddleware, authUsecase.GetCurrentUser)
+			auth.Post("/refresh", rateLimitMiddleware, authUsecase.RefreshToken)
+			auth.Post("/signOut", rateLimitMiddleware, authMiddleware, authUsecase.SignOut)
 		}
 
 		attendees := api.Group("/attendees", authMiddleware)

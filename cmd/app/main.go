@@ -43,7 +43,7 @@ func main() {
 	// Init Middleware
 	authMiddleware := middleware.NewAuthMiddleware(cfg.JWTSecret)
 
-	route.SetupRoutes(r, authUsecase, attendeeUsecase, authMiddleware)
+	route.SetupRoutes(r, authUsecase, attendeeUsecase, authMiddleware, rateLimitMiddleware)
 
 	log.Fatal(r.Listen(":8080"))
 }
