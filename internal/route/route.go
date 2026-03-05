@@ -10,7 +10,7 @@ import (
 
 var startTime = time.Now()
 
-func SetupRoutes(r *fiber.App, authUsecase usecase.AuthUsecase, attendeeUsecase usecase.AttendeesUsecase, authMiddleware fiber.Handler) {
+func SetupRoutes(r *fiber.App, authUsecase usecase.AuthUsecase, attendeeUsecase usecase.AttendeesUsecase, pieceUsecase usecase.PieceUsecase, authMiddleware fiber.Handler) {
 	r.Get("/healthz", func(c *fiber.Ctx) error {
 		uptime := time.Since(startTime).String()
 		return c.JSON(fiber.Map{
@@ -38,6 +38,12 @@ func SetupRoutes(r *fiber.App, authUsecase usecase.AuthUsecase, attendeeUsecase 
 		{
 			attendees.Get("/me", attendeeUsecase.GetMyAttendee)
 			attendees.Get("/:attendeeId", attendeeUsecase.GetByAttendeeId)
+		}
+
+		pieces := api.Group("/pieces", authMiddleware)
+		{
+			pieces.Get("/me", pieceUsecase.GetMyPiece)
+			pieces.Get("/me/collected", pieceUsecase.GetCollectedPieces)
 		}
 	}
 }
