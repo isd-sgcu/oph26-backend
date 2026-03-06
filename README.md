@@ -13,25 +13,16 @@ This backend is built using [Go](https://go.dev/) and [Fiber](https://gofiber.io
 
 ## 🧑‍💻 Local development
 
-1. **Clone the repository**:
-   ```bash
-   git clone
-   ```
-
-````
-2. **Navigate to the project directory**:
-   ```bash
-   cd oph26-backend
-````
-
-3. **Set up environment variables**:
+1. Clone the repository
+2. Navigate to the project directory:
+3. Set up environment variables:
    Copy the `.env.template` file to `.env` and fill in the required values:
 
    ```bash
    cp .env.example .env
    ```
 
-4. **Run the application**:
+4. Run the application:
    ```bash
    go run main.go
    ```
