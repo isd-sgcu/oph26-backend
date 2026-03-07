@@ -202,6 +202,16 @@ func (u *AttendeeUsecaseImpl) PutAttendee(c *fiber.Ctx) error {
 		})
 	}
 
+	if role, ok := c.Locals("role").(string); !ok {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Could not assert role from JWT as string",
+		})
+	} else if role == "staff" {
+		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
+			"error": "Forbidden, staff accounts cannot update attendee data",
+		})
+	}
+
 	// Parse body and do basic validation e.g., min/max
 	var reqBody attendee.PutAttendeesRequest
 	if err := c.BodyParser(&reqBody); err != nil {
@@ -209,33 +219,10 @@ func (u *AttendeeUsecaseImpl) PutAttendee(c *fiber.Ctx) error {
 			"error": "Invalid request body",
 		})
 	}
-	if err := u.validate.Struct(reqBody); err != nil {
+
+	if err := u.Validator.Struct(reqBody); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "Invalid request body",
-		})
-	}
-
-	// User must exist and cannot be staff
-	userFromDB, err := u.userRepo.FindByEmail(userEmail)
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "Internal DB error",
-		})
-	}
-	if userFromDB == nil || userFromDB.AttendeeId == nil {
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
-			"error": "Attendee not found",
-		})
-	}
-	// The ID of user fetched by email must match the user_id from the JWT
-	if userFromDB.ID != userId {
-		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
-			"error": "Token user does not match attendee",
-		})
-	}
-	if userFromDB.StaffId != nil {
-		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
-			"error": "Update not allowed (not an attendee)",
 		})
 	}
 
@@ -251,7 +238,9 @@ func (u *AttendeeUsecaseImpl) PutAttendee(c *fiber.Ctx) error {
 		reqBody.InterestedFaculty == nil &&
 		reqBody.ObjectiveSelected == nil &&
 		reqBody.ObjectiveOther == nil {
-		return c.SendStatus(fiber.StatusNoContent)
+		return c.SendStatus(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "No fields to update",
+		})
 	}
 
 	// Validate enum fields
