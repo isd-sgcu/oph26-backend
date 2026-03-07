@@ -308,16 +308,8 @@ func (u *AttendeesUsecaseImpl) PostAttendee(c *fiber.Ctx) error {
 			TicketCode:                    ticketCode,
 		}
 
-		if request.AttendeeType == "highschool" {
-			attendee.MyPiece = &entity.MyPiece{
-				PieceCode:  code,
-				ExpireDate: time.Now().Add(24 * time.Hour),
-			}
-		}
-
 		founded, err2 := u.AttendeeRepository.Upsert(&attendee)
-		// TODO: this need `TranslateError: true`
-		// - also test this
+		// TODO: this might need `TranslateError: true`
 		if errors.Is(err2, gorm.ErrDuplicatedKey) {
 			continue
 		}
@@ -330,6 +322,19 @@ func (u *AttendeesUsecaseImpl) PostAttendee(c *fiber.Ctx) error {
 			return c.Status(fiber.StatusConflict).JSON(fiber.Map{
 				"error": "Attendee already exists",
 			})
+		}
+
+		if request.AttendeeType == "highschool" {
+			myPiece := entity.MyPiece{
+				AttendeeID: attendee.ID,
+				PieceCode:  code,
+				ExpireDate: time.Now().Add(24 * time.Hour),
+			}
+			if err := u.AttendeeRepository.CreateMyPieceAndLink(&attendee, &myPiece); err != nil {
+				return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+					"error": "Failed to create MyPiece",
+				})
+			}
 		}
 
 	}

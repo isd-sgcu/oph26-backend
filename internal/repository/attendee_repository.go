@@ -13,6 +13,7 @@ type AttendeeRepository interface {
 	FindByTicketCode(ticketCode string) (*entity.Attendee, error)
 	Upsert(attendee *entity.Attendee) (bool, error)
 	CountByAttendeeType(attendeeType string) (int64, error)
+	CreateMyPieceAndLink(attendee *entity.Attendee, myPiece *entity.MyPiece) error
 }
 
 type AttendeeRepositoryImpl struct {
@@ -57,4 +58,11 @@ func (r *AttendeeRepositoryImpl) CountByAttendeeType(attendeeType string) (int64
 	var count int64
 	err := r.DB.Model(&entity.Attendee{}).Where("attendee_type = ?", attendeeType).Count(&count).Error
 	return count, err
+}
+
+func (r *AttendeeRepositoryImpl) CreateMyPieceAndLink(attendee *entity.Attendee, myPiece *entity.MyPiece) error {
+	if err := r.DB.Create(myPiece).Error; err != nil {
+		return err
+	}
+	return nil
 }
