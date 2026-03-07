@@ -32,10 +32,14 @@ func NewAttendeeUsecase(userRepository repository.UserRepository, attendeeReposi
 }
 
 func (u *AttendeeUsecaseImpl) PostAttendeesUseCase(c *fiber.Ctx) error {
-	// this wont ever be invalid right?
-	userIdRaw := c.Locals("user_id").(string)
+	userIdRaw, ok := c.Locals("user_id").(string)
+	if !ok {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid user_id",
+		})
+	}
+
 	userId, err := uuid.Parse(userIdRaw)
-	// userId := uuid.New()
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "Invalid user_id",
@@ -49,7 +53,6 @@ func (u *AttendeeUsecaseImpl) PostAttendeesUseCase(c *fiber.Ctx) error {
 			"error": "This is for self-registration. (non staff only)",
 		})
 	}
-	// userId := uuid.New()
 
 	request := new(attendee.AttendeeCreateRequest)
 	if err := c.BodyParser(request); err != nil {
@@ -133,6 +136,7 @@ func (u *AttendeeUsecaseImpl) PostAttendeesUseCase(c *fiber.Ctx) error {
 		InitialFirstInterestedFaculty: request.InterestedFaculty[0],
 		ObjectiveSelected:             request.ObjectiveSelected,
 		ObjectiveOther:                request.ObjectiveOther,
+		// TicketCode: ,
 	}
 
 	if request.AttendeeType == "highschool" {
