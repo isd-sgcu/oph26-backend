@@ -2,6 +2,8 @@ package usecase
 
 import (
 	"crypto/rand"
+	"errors"
+	"fmt"
 	"math/big"
 	"oph26-backend/internal/entity"
 	"oph26-backend/internal/model"
@@ -13,10 +15,11 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
 type AttendeeUsecase interface {
-	PostAttendeesUseCase(c *fiber.Ctx) error
+	PostAttendee(c *fiber.Ctx) error
 }
 
 type AttendeeUsecaseImpl struct {
@@ -31,7 +34,7 @@ func NewAttendeeUsecase(userRepository repository.UserRepository, attendeeReposi
 	}
 }
 
-func (u *AttendeeUsecaseImpl) PostAttendeesUseCase(c *fiber.Ctx) error {
+func (u *AttendeeUsecaseImpl) PostAttendee(c *fiber.Ctx) error {
 	userIdRaw, ok := c.Locals("user_id").(string)
 	if !ok {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
@@ -61,7 +64,7 @@ func (u *AttendeeUsecaseImpl) PostAttendeesUseCase(c *fiber.Ctx) error {
 		})
 	}
 
-	// Validationnnnnn
+	// Validation
 	validate := validator.New()
 	if err := validate.Struct(request); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
@@ -120,41 +123,64 @@ func (u *AttendeeUsecaseImpl) PostAttendeesUseCase(c *fiber.Ctx) error {
 			"error": "Cannot generate piece code",
 		})
 	}
-	attendee := entity.Attendee{
-		UserID:                        userId,
-		Firstname:                     request.Firstname,
-		Surname:                       request.Surname,
-		AttendeeType:                  request.AttendeeType,
-		Age:                           request.Age,
-		Province:                      request.Province,
-		StudyLevel:                    request.StudyLevel,
-		SchoolName:                    request.SchoolName,
-		NewsSourceSelected:            request.NewsSourceSelected,
-		NewsSourcesOther:              request.NewsSourcesOther,
-		InterestedFaculty:             request.InterestedFaculty,
-		InitialFirstInterestedFaculty: request.InterestedFaculty[0],
-		ObjectiveSelected:             request.ObjectiveSelected,
-		ObjectiveOther:                request.ObjectiveOther,
-		// TicketCode: ,
-	}
 
-	if request.AttendeeType == "highschool" {
-		attendee.MyPiece = &entity.MyPiece{
-			PieceCode:  code,
-			ExpireDate: time.Now().Add(24 * time.Hour),
+	// Generate ticket code, please refer to the docs (บรีฟเว็บไซต์ section)
+	// note that their might be multiple user doing this simultaneously, so
+	// we are just going to loop until its successfully created
+	retryCount := 5 // exponential backoff???
+
+	for retryCount > 0 {
+		retryCount -= 1
+
+		ticketCode, ticketCodeErr := u.generateTicketCode(request.AttendeeType)
+		if ticketCodeErr != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": "Internal DB error",
+			})
 		}
-	}
 
-	founded, err2 := u.AttendeeRepository.Upsert(&attendee)
-	if err2 != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "Internal DB error",
-		})
-	}
-	if founded {
-		return c.Status(fiber.StatusConflict).JSON(fiber.Map{
-			"error": "Attendee already exists",
-		})
+		attendee := entity.Attendee{
+			UserID:                        userId,
+			Firstname:                     request.Firstname,
+			Surname:                       request.Surname,
+			AttendeeType:                  request.AttendeeType,
+			Age:                           request.Age,
+			Province:                      request.Province,
+			StudyLevel:                    request.StudyLevel,
+			SchoolName:                    request.SchoolName,
+			NewsSourceSelected:            request.NewsSourceSelected,
+			NewsSourcesOther:              request.NewsSourcesOther,
+			InterestedFaculty:             request.InterestedFaculty,
+			InitialFirstInterestedFaculty: request.InterestedFaculty[0],
+			ObjectiveSelected:             request.ObjectiveSelected,
+			ObjectiveOther:                request.ObjectiveOther,
+			TicketCode:                    ticketCode,
+		}
+
+		if request.AttendeeType == "highschool" {
+			attendee.MyPiece = &entity.MyPiece{
+				PieceCode:  code,
+				ExpireDate: time.Now().Add(24 * time.Hour),
+			}
+		}
+
+		founded, err2 := u.AttendeeRepository.Upsert(&attendee)
+		// TODO: this need `TranslateError: true`
+		// - also test this
+		if errors.Is(err2, gorm.ErrDuplicatedKey) {
+			continue
+		}
+		if err2 != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": "Internal DB error",
+			})
+		}
+		if founded {
+			return c.Status(fiber.StatusConflict).JSON(fiber.Map{
+				"error": "Attendee already exists",
+			})
+		}
+
 	}
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
@@ -176,4 +202,27 @@ func generatePieceCode() (string, error) {
 	}
 
 	return string(b), nil
+}
+
+func (u *AttendeeUsecaseImpl) generateTicketCode(attendeeType string) (string, error) {
+	ticketCodePrefix := "A"
+	switch attendeeType {
+	case "elementaryschool":
+		ticketCodePrefix = "S"
+	case "highschool":
+		ticketCodePrefix = "H"
+	case "parent":
+		ticketCodePrefix = "P"
+	case "educationstaff":
+		ticketCodePrefix = "E"
+	case "other":
+		ticketCodePrefix = "A"
+	}
+
+	count, err := u.AttendeeRepository.CountByAttendeeType(attendeeType)
+	if err != nil {
+		return "", err
+	}
+
+	return ticketCodePrefix + fmt.Sprintf("%06d", count+1), nil
 }
