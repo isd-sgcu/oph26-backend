@@ -7,8 +7,9 @@ import (
 	"math/big"
 	"oph26-backend/internal/entity"
 	"oph26-backend/internal/model"
-	"oph26-backend/internal/model/attendee"
+	attendeeModel "oph26-backend/internal/model/attendee"
 	"oph26-backend/internal/repository"
+	"regexp"
 	"slices"
 	"time"
 
@@ -18,23 +19,173 @@ import (
 	"gorm.io/gorm"
 )
 
-type AttendeeUsecase interface {
+type AttendeesUsecase interface {
+	GetMyAttendee(c *fiber.Ctx) error
+	GetByAttendeeId(c *fiber.Ctx) error
 	PostAttendee(c *fiber.Ctx) error
 }
 
-type AttendeeUsecaseImpl struct {
-	UserRepository     repository.UserRepository
+type AttendeesUsecaseImpl struct {
 	AttendeeRepository repository.AttendeeRepository
+	UserRepository     repository.UserRepository
 }
 
-func NewAttendeeUsecase(userRepository repository.UserRepository, attendeeRepository repository.AttendeeRepository) AttendeeUsecase {
-	return &AttendeeUsecaseImpl{
+func NewAttendeeUsecase(attendeeRepositry repository.AttendeeRepository, userRepository repository.UserRepository) AttendeesUsecase {
+	return &AttendeesUsecaseImpl{
+		AttendeeRepository: attendeeRepositry,
 		UserRepository:     userRepository,
-		AttendeeRepository: attendeeRepository,
 	}
 }
 
-func (u *AttendeeUsecaseImpl) PostAttendee(c *fiber.Ctx) error {
+func (u *AttendeesUsecaseImpl) GetMyAttendee(c *fiber.Ctx) error {
+	role, ok := c.Locals("role").(string)
+	if !ok {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to retrieve user role from context",
+		})
+	}
+	// TODO: Auth here
+	if role == "staff" {
+		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
+			"error": "Forbidden, staff accounts cannot access attendee data",
+		})
+	}
+
+	userIDStr, ok := c.Locals("user_id").(string)
+	if !ok {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to retrieve user id from context",
+		})
+	}
+
+	userID, err := uuid.Parse(userIDStr)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": err.Error(),
+		})
+	}
+
+	attendee, err := u.AttendeeRepository.FindByUserID(userID)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": err.Error(),
+		})
+	}
+	if attendee == nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+			"error": "Attendee data not found for the current user",
+		})
+	}
+
+	return c.JSON(&attendeeModel.AttendeeResponse{
+		Age:                           attendee.Age,
+		AttendeeType:                  attendee.AttendeeType,
+		CertificateName:               attendee.CertificateName,
+		CheckedInAt:                   attendee.CheckedInAt,
+		CheckinStaffID:                attendee.CheckinStaffID,
+		CreatedAt:                     attendee.CreatedAt,
+		FavoriteWorkshops:             attendee.FavoriteWorkshops,
+		Firstname:                     attendee.Firstname,
+		ID:                            attendee.ID,
+		InitialFirstInterestedFaculty: attendee.InitialFirstInterestedFaculty,
+		InterestedFaculty:             attendee.InterestedFaculty,
+		NewsSourcesOther:              attendee.NewsSourcesOther,
+		NewsSourceSelected:            attendee.NewsSourceSelected,
+		ObjectiveOther:                attendee.ObjectiveOther,
+		ObjectiveSelected:             attendee.ObjectiveSelected,
+		Province:                      attendee.Province,
+		SchoolName:                    attendee.SchoolName,
+		StudyLevel:                    attendee.StudyLevel,
+		Surname:                       attendee.Surname,
+		TicketCode:                    attendee.TicketCode,
+		UpdatedAt:                     attendee.UpdatedAt,
+		UserID:                        attendee.UserID,
+	})
+}
+
+func (u *AttendeesUsecaseImpl) GetByAttendeeId(c *fiber.Ctx) error {
+	ticketCode := c.Params("attendeeId")
+	matched, _ := regexp.MatchString(`^[HSPEA]\d{6}$`, ticketCode)
+	if !matched {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid Ticket Code",
+		})
+	}
+
+	role, ok := c.Locals("role").(string)
+	if !ok {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to retrieve user role from context",
+		})
+	}
+	// TODO: Auth here
+	if role == "attendee" {
+		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
+			"error": "Forbidden",
+		})
+	}
+
+	attendee, err := u.AttendeeRepository.FindByTicketCode(ticketCode)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": err.Error(),
+		})
+	}
+	if attendee == nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+			"error": "Attendee not found",
+		})
+	}
+
+	var checkinStaff *model.StaffResponse
+	if attendee.CheckinStaff != nil {
+		staff := attendee.CheckinStaff
+		checkinStaff = &model.StaffResponse{
+			ID:        staff.ID,
+			UserID:    staff.UserID,
+			Cuid:      staff.Cuid,
+			Firstname: staff.Firstname,
+			Surname:   staff.Surname,
+			Nickname:  staff.Nickname,
+			Phone:     staff.Phone,
+			Year:      staff.Year,
+			Email:     staff.Email,
+			Faculty:   staff.Faculty,
+			CreatedAt: staff.CreatedAt,
+			UpdatedAt: staff.UpdatedAt,
+		}
+	}
+
+	return c.JSON(&attendeeModel.AttendeeStaffResponse{
+		AttendeeResponse: attendeeModel.AttendeeResponse{
+			Age:                           attendee.Age,
+			AttendeeType:                  attendee.AttendeeType,
+			CertificateName:               attendee.CertificateName,
+			CheckedInAt:                   attendee.CheckedInAt,
+			CheckinStaffID:                attendee.CheckinStaffID,
+			CreatedAt:                     attendee.CreatedAt,
+			FavoriteWorkshops:             attendee.FavoriteWorkshops,
+			Firstname:                     attendee.Firstname,
+			ID:                            attendee.ID,
+			InitialFirstInterestedFaculty: attendee.InitialFirstInterestedFaculty,
+			InterestedFaculty:             attendee.InterestedFaculty,
+			NewsSourcesOther:              attendee.NewsSourcesOther,
+			NewsSourceSelected:            attendee.NewsSourceSelected,
+			ObjectiveOther:                attendee.ObjectiveOther,
+			ObjectiveSelected:             attendee.ObjectiveSelected,
+			Province:                      attendee.Province,
+			SchoolName:                    attendee.SchoolName,
+			StudyLevel:                    attendee.StudyLevel,
+			Surname:                       attendee.Surname,
+			TicketCode:                    attendee.TicketCode,
+			UpdatedAt:                     attendee.UpdatedAt,
+			UserID:                        attendee.UserID,
+		},
+		CheckinStaff: checkinStaff,
+	})
+}
+
+func (u *AttendeesUsecaseImpl) PostAttendee(c *fiber.Ctx) error {
 	userIdRaw, ok := c.Locals("user_id").(string)
 	if !ok {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
@@ -57,7 +208,7 @@ func (u *AttendeeUsecaseImpl) PostAttendee(c *fiber.Ctx) error {
 		})
 	}
 
-	request := new(attendee.AttendeeCreateRequest)
+	request := new(attendeeModel.AttendeeCreateRequest)
 	if err := c.BodyParser(request); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "Cannot parse JSON",
@@ -204,7 +355,7 @@ func generatePieceCode() (string, error) {
 	return string(b), nil
 }
 
-func (u *AttendeeUsecaseImpl) generateTicketCode(attendeeType string) (string, error) {
+func (u *AttendeesUsecaseImpl) generateTicketCode(attendeeType string) (string, error) {
 	ticketCodePrefix := "A"
 	switch attendeeType {
 	case "elementaryschool":
