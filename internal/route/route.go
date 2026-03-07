@@ -8,9 +8,16 @@ import (
 	"oph26-backend/internal/usecase"
 )
 
+type RouteConfig struct {
+	AuthUsecase         usecase.AuthUsecase
+	AttendeeUsecase     usecase.AttendeesUsecase
+	AuthMiddleware      fiber.Handler
+	RateLimitMiddleware fiber.Handler
+}
+
 var startTime = time.Now()
 
-func SetupRoutes(r *fiber.App, authUsecase usecase.AuthUsecase, attendeeUsecase usecase.AttendeesUsecase, authMiddleware fiber.Handler, rateLimitMiddleware fiber.Handler) {
+func SetupRoutes(r *fiber.App, c RouteConfig) {
 	r.Get("/healthz", func(c *fiber.Ctx) error {
 		uptime := time.Since(startTime).String()
 		return c.JSON(fiber.Map{
@@ -23,24 +30,18 @@ func SetupRoutes(r *fiber.App, authUsecase usecase.AuthUsecase, attendeeUsecase 
 	{
 		api.Get("/ping", usecase.Ping)
 
-		// Example of protected route (as per requirement, but applies generally)
-		// attendees := api.Group("/attendees", authMiddleware)
-		// attendees.Post("/", ...)
-		// Delivery Layer: HTTP handlers that call Use Cases
-		// api.Get("/users", userUsecase.GetAllUsers)
-
 		auth := api.Group("/auth")
 		{
-			auth.Post("/token", rateLimitMiddleware, authUsecase.Login)
-			auth.Get("/me", rateLimitMiddleware, authMiddleware, authUsecase.GetCurrentUser)
-			auth.Post("/refresh", rateLimitMiddleware, authUsecase.RefreshToken)
-			auth.Post("/signOut", rateLimitMiddleware, authMiddleware, authUsecase.SignOut)
+			auth.Post("/token", c.RateLimitMiddleware, c.AuthUsecase.Login)
+			auth.Get("/me", c.RateLimitMiddleware, c.AuthMiddleware, c.AuthUsecase.GetCurrentUser)
+			auth.Post("/refresh", c.RateLimitMiddleware, c.AuthUsecase.RefreshToken)
+			auth.Post("/signOut", c.RateLimitMiddleware, c.AuthMiddleware, c.AuthUsecase.SignOut)
 		}
 
-		attendees := api.Group("/attendees", authMiddleware)
+		attendees := api.Group("/attendees", c.AuthMiddleware)
 		{
-			attendees.Get("/me", attendeeUsecase.GetMyAttendee)
-			attendees.Get("/:attendeeId", attendeeUsecase.GetByAttendeeId)
+			attendees.Get("/me", c.AttendeeUsecase.GetMyAttendee)
+			attendees.Get("/:attendeeId", c.AttendeeUsecase.GetByAttendeeId)
 		}
 	}
 }

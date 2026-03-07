@@ -7,11 +7,10 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/limiter"
 )
 
-func NewRateLimitMiddleware() fiber.Handler {
-	// Using a sliding window limiter to allow bursts of requests while still enforcing an overall rate limit.
+func RateLimitMiddleware(maxRequests int, window time.Duration) fiber.Handler {
 	return limiter.New(limiter.Config{
-		Max:               20,
-		Expiration:        30 * time.Second,
+		Max:               maxRequests,
+		Expiration:        window,
 		LimiterMiddleware: limiter.SlidingWindow{},
 	})
 }

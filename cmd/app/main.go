@@ -8,6 +8,7 @@ import (
 	"oph26-backend/internal/repository"
 	"oph26-backend/internal/route"
 	"oph26-backend/internal/usecase"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -42,8 +43,15 @@ func main() {
 
 	// Init Middleware
 	authMiddleware := middleware.NewAuthMiddleware(cfg.JWTSecret)
+	rateLimitMiddleWare := middleware.RateLimitMiddleware(10, time.Minute) // 10 requests per minute
+	
 
-	route.SetupRoutes(r, authUsecase, attendeeUsecase, authMiddleware, rateLimitMiddleware)
+	route.SetupRoutes(r, route.RouteConfig{
+		AuthUsecase:         authUsecase,
+		AttendeeUsecase:     attendeeUsecase,
+		AuthMiddleware:      authMiddleware,
+		RateLimitMiddleware: rateLimitMiddleWare,
+	})
 
 	log.Fatal(r.Listen(":8080"))
 }
