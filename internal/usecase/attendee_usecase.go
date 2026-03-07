@@ -23,7 +23,7 @@ type AttendeeUsecaseImpl struct {
 type AttendeeUsecase interface {
 	GetMyAttendee(c *fiber.Ctx) error
 	GetByAttendeeId(c *fiber.Ctx) error
-	PutAttendeesUseCase(c *fiber.Ctx) error
+	PutAttendee(c *fiber.Ctx) error
 }
 
 func NewAttendeeUsecase(userRepo repository.UserRepository, attendeeRepo repository.AttendeeRepository) AttendeeUsecase {
@@ -182,7 +182,7 @@ func (u *AttendeeUsecaseImpl) GetByAttendeeId(c *fiber.Ctx) error {
 	})
 }
 
-func (u *AttendeeUsecaseImpl) PutAttendeesUseCase(c *fiber.Ctx) error {
+func (u *AttendeeUsecaseImpl) PutAttendee(c *fiber.Ctx) error {
 	userEmail, ok := c.Locals("email").(string)
 	if !ok {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
