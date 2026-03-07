@@ -183,12 +183,6 @@ func (u *AttendeeUsecaseImpl) GetByAttendeeId(c *fiber.Ctx) error {
 }
 
 func (u *AttendeeUsecaseImpl) PutAttendee(c *fiber.Ctx) error {
-	userEmail, ok := c.Locals("email").(string)
-	if !ok {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Could not assert email from JWT as string",
-		})
-	}
 	userIdStr, ok := c.Locals("user_id").(string)
 	if !ok {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
@@ -220,7 +214,7 @@ func (u *AttendeeUsecaseImpl) PutAttendee(c *fiber.Ctx) error {
 		})
 	}
 
-	if err := u.Validator.Struct(reqBody); err != nil {
+	if err := u.validate.Struct(reqBody); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "Invalid request body",
 		})
@@ -238,7 +232,7 @@ func (u *AttendeeUsecaseImpl) PutAttendee(c *fiber.Ctx) error {
 		reqBody.InterestedFaculty == nil &&
 		reqBody.ObjectiveSelected == nil &&
 		reqBody.ObjectiveOther == nil {
-		return c.SendStatus(fiber.StatusBadRequest).JSON(fiber.Map{
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "No fields to update",
 		})
 	}
