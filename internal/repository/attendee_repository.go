@@ -19,6 +19,6 @@ func NewAttendeeRepository(db *gorm.DB) AttendeeRepository {
 }
 
 func (r *AttendeeRepositoryImpl) Upsert(attendee *entity.Attendee) (founded bool, err error) {
-	result := r.DB.FirstOrCreate(attendee)
+	result := r.DB.Where("user_id = ?", attendee.UserID).FirstOrCreate(attendee)
 	return result.RowsAffected == 0, result.Error
 }
