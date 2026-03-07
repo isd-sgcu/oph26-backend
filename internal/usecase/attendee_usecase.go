@@ -81,12 +81,6 @@ func (u *AttendeeUsecaseImpl) PostAttendeesUseCase(c *fiber.Ctx) error {
 		})
 	}
 
-	if !model.ObjectivesAreValid(request.ObjectiveSelected) {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid request body; unknown objective",
-		})
-	}
-
 	if slices.Contains(request.ObjectiveSelected, string(model.OtherObjective)) && request.ObjectiveOther == nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "Invalid request body; objective_selected is 'อื่น ๆ', but objective_other is not provided",
