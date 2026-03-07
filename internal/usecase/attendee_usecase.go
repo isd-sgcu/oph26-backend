@@ -120,7 +120,12 @@ func (u *AttendeeUsecaseImpl) PostAttendeesUseCase(c *fiber.Ctx) error {
 		})
 	}
 
-	code, _ := generatePieceCode()
+	code, codeErr := generatePieceCode()
+	if codeErr != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Cannot generate piece code",
+		})
+	}
 	attendee := entity.Attendee{
 		UserID:                        userId,
 		Firstname:                     request.Firstname,
