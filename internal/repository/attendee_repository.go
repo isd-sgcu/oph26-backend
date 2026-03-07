@@ -11,6 +11,7 @@ import (
 type AttendeeRepository interface {
 	FindByUserID(userID uuid.UUID) (*entity.Attendee, error)
 	FindByTicketCode(ticketCode string) (*entity.Attendee, error)
+	Update(attendee *entity.Attendee, userId uuid.UUID) error
 }
 
 type AttendeeRepositoryImpl struct {
@@ -44,4 +45,20 @@ func (r *AttendeeRepositoryImpl) FindByTicketCode(ticketCode string) (*entity.At
 	}
 
 	return &attendee, nil
+}
+
+func (r *AttendeeRepositoryImpl) Update(attendee *entity.Attendee, userId uuid.UUID) error {
+	res := r.DB.Model(&entity.Attendee{}).
+		Where(&entity.Attendee{UserID: userId}).
+		Updates(attendee)
+
+	if res.Error != nil {
+		return res.Error
+	}
+
+	if res.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
+	}
+
+	return nil
 }

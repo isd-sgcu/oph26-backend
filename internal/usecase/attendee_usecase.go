@@ -1,28 +1,40 @@
 package usecase
 
 import (
+	"oph26-backend/internal/entity"
 	"oph26-backend/internal/model"
+	"oph26-backend/internal/model/attendee"
 	"oph26-backend/internal/repository"
 	"regexp"
+	"slices"
 
+	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
-type AttendeesUsecase interface {
+type AttendeeUsecaseImpl struct {
+	userRepo     repository.UserRepository
+	attendeeRepo repository.AttendeeRepository
+	validate     *validator.Validate
+}
+
+type AttendeeUsecase interface {
 	GetMyAttendee(c *fiber.Ctx) error
 	GetByAttendeeId(c *fiber.Ctx) error
+	PutAttendee(c *fiber.Ctx) error
 }
 
-type AttendeesUsecaseImpl struct {
-	AttendeeRepository repository.AttendeeRepository
+func NewAttendeeUsecase(userRepo repository.UserRepository, attendeeRepo repository.AttendeeRepository) AttendeeUsecase {
+	return &AttendeeUsecaseImpl{
+		userRepo:     userRepo,
+		attendeeRepo: attendeeRepo,
+		validate:     validator.New(),
+	}
 }
 
-func NewAttendeeUsecase(attendeeRepositry repository.AttendeeRepository) AttendeesUsecase {
-	return &AttendeesUsecaseImpl{AttendeeRepository: attendeeRepositry}
-}
-
-func (u *AttendeesUsecaseImpl) GetMyAttendee(c *fiber.Ctx) error {
+func (u *AttendeeUsecaseImpl) GetMyAttendee(c *fiber.Ctx) error {
 	role, ok := c.Locals("role").(string)
 	if !ok {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
@@ -50,7 +62,7 @@ func (u *AttendeesUsecaseImpl) GetMyAttendee(c *fiber.Ctx) error {
 		})
 	}
 
-	attendee, err := u.AttendeeRepository.FindByUserID(userID)
+	attendee, err := u.attendeeRepo.FindByUserID(userID)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": err.Error(),
@@ -88,7 +100,7 @@ func (u *AttendeesUsecaseImpl) GetMyAttendee(c *fiber.Ctx) error {
 	})
 }
 
-func (u *AttendeesUsecaseImpl) GetByAttendeeId(c *fiber.Ctx) error {
+func (u *AttendeeUsecaseImpl) GetByAttendeeId(c *fiber.Ctx) error {
 	ticketCode := c.Params("attendeeId")
 	matched, _ := regexp.MatchString(`^[HSPEA]\d{6}$`, ticketCode)
 	if !matched {
@@ -110,7 +122,7 @@ func (u *AttendeesUsecaseImpl) GetByAttendeeId(c *fiber.Ctx) error {
 		})
 	}
 
-	attendee, err := u.AttendeeRepository.FindByTicketCode(ticketCode)
+	attendee, err := u.attendeeRepo.FindByTicketCode(ticketCode)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": err.Error(),
@@ -167,5 +179,163 @@ func (u *AttendeesUsecaseImpl) GetByAttendeeId(c *fiber.Ctx) error {
 			UserID:                        attendee.UserID,
 		},
 		CheckinStaff: checkinStaff,
+	})
+}
+
+func (u *AttendeeUsecaseImpl) PutAttendee(c *fiber.Ctx) error {
+	userIdStr, ok := c.Locals("user_id").(string)
+	if !ok {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Could not assert user_id from JWT as string",
+		})
+	}
+	userId, parseErr := uuid.Parse(userIdStr)
+	if parseErr != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid user_id",
+		})
+	}
+
+	if role, ok := c.Locals("role").(string); !ok {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Could not assert role from JWT as string",
+		})
+	} else if role == "staff" {
+		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
+			"error": "Forbidden, staff accounts cannot update attendee data",
+		})
+	}
+
+	// Parse body and do basic validation e.g., min/max
+	var reqBody attendee.PutAttendeesRequest
+	if err := c.BodyParser(&reqBody); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid request body",
+		})
+	}
+
+	if err := u.validate.Struct(reqBody); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid request body",
+		})
+	}
+
+	// No update to do if body is empty
+	if reqBody.Firstname == nil &&
+		reqBody.Surname == nil &&
+		reqBody.Age == nil &&
+		reqBody.Province == nil &&
+		reqBody.StudyLevel == nil &&
+		reqBody.SchoolName == nil &&
+		reqBody.NewsSourceSelected == nil &&
+		reqBody.NewsSourcesOther == nil &&
+		reqBody.InterestedFaculty == nil &&
+		reqBody.ObjectiveSelected == nil &&
+		reqBody.ObjectiveOther == nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "No fields to update",
+		})
+	}
+
+	// Validate enum fields
+	if reqBody.InterestedFaculty != nil {
+		arr := []string(*reqBody.InterestedFaculty)
+		if !model.FacultiesAreValid(arr) {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+				"error": "Invalid request body; unknown faculty",
+			})
+		}
+	}
+	if reqBody.Province != nil && !model.ProvinceIsValid(*reqBody.Province) {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid request body; unknown province",
+		})
+	}
+	if reqBody.NewsSourceSelected != nil {
+		arr := []string(*reqBody.NewsSourceSelected)
+		if !model.NewsSourcesAreValid(arr) {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+				"error": "Invalid request body; unknown news source",
+			})
+		}
+		// If NewsSourceSelected has "อื่น ๆ", NewsSourcesOther must have value
+		if slices.Contains(arr, string(model.OtherNewsSource)) && reqBody.NewsSourcesOther == nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+				"error": "Invalid request body; news_sources_selected is 'อื่น ๆ', but news_sources_other is not provided",
+			})
+		}
+	}
+	if reqBody.ObjectiveSelected != nil {
+		arr := []string(*reqBody.ObjectiveSelected)
+		if !model.ObjectivesAreValid(arr) {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+				"error": "Invalid request body; unknown objective",
+			})
+		}
+		// If ObjectiveSelected has "อื่น ๆ", ObjectiveOther must have value
+		if slices.Contains(arr, string(model.OtherObjective)) && reqBody.ObjectiveOther == nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+				"error": "Invalid request body; objective_selected is 'อื่น ๆ', but objective_other is not provided",
+			})
+		}
+	}
+	if reqBody.StudyLevel != nil && !model.StudyLevelIsValid(*reqBody.StudyLevel) {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid request body; unknown study_level",
+		})
+	}
+
+	// Map request body to attendee entity
+	updateStruct := entity.Attendee{}
+
+	if reqBody.Firstname != nil {
+		updateStruct.Firstname = *reqBody.Firstname
+	}
+	if reqBody.Surname != nil {
+		updateStruct.Surname = *reqBody.Surname
+	}
+	if reqBody.Age != nil {
+		updateStruct.Age = *reqBody.Age
+	}
+	if reqBody.Province != nil {
+		updateStruct.Province = *reqBody.Province
+	}
+	if reqBody.StudyLevel != nil {
+		updateStruct.StudyLevel = reqBody.StudyLevel
+	}
+	if reqBody.SchoolName != nil {
+		updateStruct.SchoolName = reqBody.SchoolName
+	}
+	if reqBody.NewsSourceSelected != nil {
+		updateStruct.NewsSourceSelected = *reqBody.NewsSourceSelected
+	}
+	if reqBody.NewsSourcesOther != nil {
+		updateStruct.NewsSourcesOther = reqBody.NewsSourcesOther
+	}
+	if reqBody.InterestedFaculty != nil {
+		updateStruct.InterestedFaculty = *reqBody.InterestedFaculty
+	}
+	if reqBody.ObjectiveSelected != nil {
+		updateStruct.ObjectiveSelected = *reqBody.ObjectiveSelected
+	}
+	if reqBody.ObjectiveOther != nil {
+		updateStruct.ObjectiveOther = reqBody.ObjectiveOther
+	}
+
+	updateErr := u.attendeeRepo.Update(&updateStruct, userId)
+	if updateErr != nil {
+		if updateErr == gorm.ErrRecordNotFound {
+			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+				"error": "Attendee not found",
+			})
+		}
+
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Internal DB error",
+		})
+	}
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"ok": true,
 	})
 }
