@@ -197,7 +197,7 @@ paths:
       tags:
         - Attendees
       summary: ข้อมูลผู้เข้าร่วมงานตาม Ticket Code
-  /favorite_workshops:
+  /favorite_workshops/me:
     get:
       description: ดึงรายการเวิร์กช็อปที่ผู้เข้าร่วมงานชื่นชอบของผู้ใช้ที่ล็อกอินอยู่ปัจจุบัน
       responses:
