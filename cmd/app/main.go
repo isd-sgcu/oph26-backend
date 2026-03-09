@@ -38,18 +38,22 @@ func main() {
 	refreshTokenRepo := repository.NewRefreshTokenRepository(config.DB)
 	authUsecase := usecase.NewAuthUsecase(userRepo, staffRepo, refreshTokenRepo, cfg.GoogleClientID, cfg.JWTSecret, cfg.AppEnv)
 
+	pieceRepo := repository.NewPieceRepository(config.DB)
+	userUsecase := usecase.NewUserUsecase(userRepo)
 	attendeeRepo := repository.NewAttendeeRepository(config.DB)
-	attendeeUsecase := usecase.NewAttendeeUsecase(attendeeRepo)
+	attendeeUsecase := usecase.NewAttendeeUsecase(attendeeRepo, userRepo)
+	pieceUsecase := usecase.NewPieceUsecase(pieceRepo)
 
 	// Init Middleware
 	authMiddleware := middleware.NewAuthMiddleware(cfg.JWTSecret)
 	rateLimitMiddleWare := middleware.RateLimitMiddleware(10, time.Minute) // 10 requests per minute
-	
 
 	route.SetupRoutes(r, route.RouteConfig{
 		AuthUsecase:         authUsecase,
 		AttendeeUsecase:     attendeeUsecase,
 		AuthMiddleware:      authMiddleware,
+		UserUsecase:         userUsecase,
+		PieceUsecase:        pieceUsecase,
 		RateLimitMiddleware: rateLimitMiddleWare,
 	})
 

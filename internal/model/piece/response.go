@@ -1,0 +1,37 @@
+package piece
+
+import (
+	"time"
+
+	"github.com/google/uuid"
+)
+
+type MyPieceResponse struct {
+	ID         uuid.UUID `json:"id"`
+	UserID     uuid.UUID `json:"user_id"`
+	PieceCode  string    `json:"piece_code"`
+	ExpireDate time.Time `json:"expire_date"`
+	Faculty    string    `json:"faculty"`
+}
+
+type FriendPieceResponse struct {
+	ID          uuid.UUID  `json:"id"`
+	UserID      uuid.UUID  `json:"user_id"`
+	Faculty     string     `json:"faculty"`
+	CollectedAt *time.Time `json:"collected_at,omitempty"`
+}
+
+type FacultyStats struct {
+	Count  int  `json:"count"`
+	IsTop1 bool `json:"is_top_1"`
+}
+
+type CollectedPiecesStats struct {
+	TotalCollected     int                     `json:"total_collected"`
+	CollectedByFaculty map[string]FacultyStats `json:"collected_by_faculty"`
+}
+
+type CollectedPiecesResponse struct {
+	CollectedPieces []FriendPieceResponse `json:"collected_pieces"`
+	Stats           CollectedPiecesStats  `json:"stats"`
+}
