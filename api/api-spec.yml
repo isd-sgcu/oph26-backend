@@ -162,11 +162,8 @@ paths:
           name: attendeeId
           required: true
           schema:
-            description: ID ของผู้เข้าร่วมงาน
-            examples:
-              - value: 123e4567-e89b-12d3-a456-426614174000
-            format: uuid
-            type: string
+            $ref: "#/components/schemas/AttendeeTicketCode"
+            description: รหัสตั๋วของผู้เข้าร่วมงานที่ต้องการดึงข้อมูล (Ticket Code)
       responses:
         "200":
           content:
@@ -199,6 +196,7 @@ paths:
         - bearerAuth: []
       tags:
         - Attendees
+      summary: ข้อมูลผู้เข้าร่วมงานตาม Ticket Code
   /favorite_workshops:
     get:
       description: ดึงรายการเวิร์กช็อปที่ผู้เข้าร่วมงานชื่นชอบของผู้ใช้ที่ล็อกอินอยู่ปัจจุบัน
@@ -435,7 +433,7 @@ paths:
                   - $ref: "#/components/schemas/ErrorResponse"
                   - properties:
                       attendee:
-                        $ref: "#/components/schemas/AttendeeWithCheckinStaff"
+                        $ref: "#/components/schemas/Attendee"
                         description: ข้อมูลผู้เข้าร่วมงานที่พยายามเช็คอินซ้ำคณะ
         "500":
           $ref: "#/components/responses/InternalServerErrorResponse"
@@ -947,6 +945,11 @@ components:
       description: รหัสตั๋วของผู้เข้าร่วมงาน
       pattern: ^[SPEA]\d{6}$
       type: string
+      examples:
+        - S123456
+        - P654321
+        - E111111
+        - A000010
     AttendeeTypeEnum:
       oneOf:
         - const: student
@@ -1001,9 +1004,6 @@ components:
       properties:
         date_of_birth:
           $ref: "#/components/schemas/DateOfBirth"
-        attendee_type:
-          $ref: "#/components/schemas/AttendeeTypeEnum"
-          description: ประเภทของผู้เข้าร่วมงาน
         firstname:
           $ref: "#/components/schemas/Firstname"
         interested_faculty:
@@ -1061,15 +1061,10 @@ components:
             เป็น 'นักเรียนประถมศึกษา' หรือ 'นักเรียนมัธยมศึกษา'
         surname:
           $ref: "#/components/schemas/Surname"
+        transportation_method:
+          $ref: "#/components/schemas/TransportationMethodEnum"
+          description: วิธีการเดินทางมางาน
       type: object
-    AttendeeWithCheckinStaff:
-      allOf:
-        - $ref: "#/components/schemas/Attendee"
-        - properties:
-            checkin_staff:
-              $ref: "#/components/schemas/Staff"
-              description: ข้อมูลสตาฟที่ทำการเช็คอินให้ผู้เข้าร่วมงาน (ถ้ามี)
-          type: object
     DateOfBirth:
       description: วันเดือนปีเกิดของผู้เข้าร่วมงาน
       format: date
