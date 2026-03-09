@@ -32,12 +32,12 @@ func SetupRoutes(r *fiber.App, c RouteConfig) {
 	{
 		api.Get("/ping", usecase.Ping)
 
-		auth := api.Group("/auth")
+		auth := api.Group("/auth", c.RateLimitMiddleware)
 		{
-			auth.Post("/token", c.RateLimitMiddleware, c.AuthUsecase.Login)
-			auth.Get("/me", c.RateLimitMiddleware, c.AuthMiddleware, c.AuthUsecase.GetCurrentUser)
-			auth.Post("/refresh", c.RateLimitMiddleware, c.AuthUsecase.RefreshToken)
-			auth.Post("/signOut", c.RateLimitMiddleware, c.AuthMiddleware, c.AuthUsecase.SignOut)
+			auth.Post("/token", c.AuthUsecase.Login)
+			auth.Get("/me", c.AuthMiddleware, c.AuthUsecase.GetCurrentUser)
+			auth.Post("/refresh", c.AuthUsecase.RefreshToken)
+			auth.Post("/signOut", c.AuthMiddleware, c.AuthUsecase.SignOut)
 		}
 
 		attendees := api.Group("/attendees", c.AuthMiddleware)
