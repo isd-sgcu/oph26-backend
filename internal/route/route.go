@@ -10,7 +10,7 @@ import (
 
 type RouteConfig struct {
 	AuthUsecase         usecase.AuthUsecase
-	AttendeeUsecase     usecase.AttendeesUsecase
+	AttendeeUsecase     usecase.AttendeeUsecase
 	UserUsecase         usecase.UserUsecase
 	PieceUsecase        usecase.PieceUsecase
 	AuthMiddleware      fiber.Handler
