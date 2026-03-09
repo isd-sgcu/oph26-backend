@@ -12,6 +12,8 @@ info:
   title: "Chula Openhouse 2026 API"
   version: "1.0"
 servers:
+  - description: Local server
+    url: http://localhost:8080/api
   - description: Production server
     url: https://api.chulaopenhouse.com/api
 externalDocs:
@@ -197,6 +199,83 @@ paths:
         - bearerAuth: []
       tags:
         - Attendees
+  /favorite_workshops:
+    get:
+      description: ดึงรายการเวิร์กช็อปที่ผู้เข้าร่วมงานชื่นชอบของผู้ใช้ที่ล็อกอินอยู่ปัจจุบัน
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                properties:
+                  favorite_workshops:
+                    items:
+                      type: string
+                    type: array
+          description: OK, list of favorite workshops (empty array if none)
+        "401":
+          $ref: "#/components/responses/UnauthorizedResponse"
+        "403":
+          content:
+            application/json:
+              examples:
+                StaffAccountForbiddenExample:
+                  description: >-
+                    ตัวอย่างการตอบกลับเมื่อสตาฟพยายามเข้าถึงข้อมูลเวิร์กช็อปที่ชื่นชอบของตัวเอง
+                  summary: Staff Account Forbidden Example
+                  value:
+                    error: Forbidden, staff accounts cannot access favorite workshops
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: >-
+            Forbidden, user does not have permission to access favorite workshops
+            (might be a staff account)
+        "404":
+          content:
+            application/json:
+              examples:
+                FavoriteWorkshopsNotSetExample:
+                  description: >-
+                    ตัวอย่างการตอบกลับเมื่อผู้ใช้ที่ล็อกอินยังไม่มีข้อมูลเวิร์กช็อปที่ชื่นชอบ
+                  summary: Favorite Workshops Not Set Example
+                  value:
+                    error: Favorite workshops not found for the current user
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: Not Found, favorite workshops data for the current user does not exist (user might not have registered yet)
+        "500":
+          $ref: "#/components/responses/InternalServerErrorResponse"
+      security:
+        - bearerAuth: []
+      summary: ข้อมูลเวิร์กช็อปที่ผู้เข้าร่วมงานชื่นชอบ
+      tags:
+        - Attendees
+    put:
+      description: ปรับปรุงรายการเวิร์กช็อปที่ผู้เข้าร่วมงานชื่นชอบของผู้ใช้ที่ล็อกอินอยู่ปัจจุบัน
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FavoriteWorkshopsUpdateRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+          description: OK, favorite workshops updated successfully
+        "401":
+          $ref: "#/components/responses/UnauthorizedResponse"
+        "403":
+          $ref: "#/components/responses/ForbiddenResponse"
+        "500":
+          $ref: "#/components/responses/InternalServerErrorResponse"
+      security:
+        - bearerAuth: []
+      summary: ปรับปรุงเวิร์กช็อปที่ผู้เข้าร่วมงานชื่นชอบ
+      tags:
+        - Attendees
   /auth/me:
     get:
       description: ดึงข้อมูลผู้ใช้ที่ล็อกอินอยู่ปัจจุบัน
@@ -357,7 +436,7 @@ paths:
                   - properties:
                       attendee:
                         $ref: "#/components/schemas/AttendeeWithCheckinStaff"
-                        description: ข้อมูลผู้เข้าร่วมงานที่พยายามเช็คอินซ้ำ
+                        description: ข้อมูลผู้เข้าร่วมงานที่พยายามเช็คอินซ้ำคณะ
         "500":
           $ref: "#/components/responses/InternalServerErrorResponse"
       tags:
@@ -651,17 +730,10 @@ components:
           description: Access Token ที่ใช้สำหรับการยืนยันตัวตนใน API
           type: string
       type: object
-    Age:
-      description: อายุของผู้เข้าร่วมงาน
-      examples:
-        - 16
-      maximum: 100
-      minimum: 5
-      type: integer
     Attendee:
       properties:
-        age:
-          $ref: "#/components/schemas/Age"
+        date_of_birth:
+          $ref: "#/components/schemas/DateOfBirth"
         attendee_type:
           $ref: "#/components/schemas/AttendeeTypeEnum"
           description: ประเภทของผู้เข้าร่วมงาน
@@ -719,6 +791,9 @@ components:
           type: array
         province:
           $ref: "#/components/schemas/ProvinceEnum"
+        district:
+          $ref: "#/components/schemas/District"
+          description: อำเภอหรือเขตของผู้เข้าร่วมงาน
         school_name:
           description: ชื่อโรงเรียนหรือสถาบันการศึกษาของผู้เข้าร่วมงาน
           examples:
@@ -739,6 +814,9 @@ components:
           $ref: "#/components/schemas/Surname"
         ticket_code:
           $ref: "#/components/schemas/AttendeeTicketCode"
+        transportation_method:
+          $ref: "#/components/schemas/TransportationMethodEnum"
+          description: วิธีการเดินทางมางาน
         updatedAt:
           format: date-time
           title: วันที่แก้ไขข้อมูลผู้เข้าร่วมงานล่าสุด
@@ -753,15 +831,17 @@ components:
         - attendee_type
         - age
         - province
+        - district
         - news_sources_selected
         - objective_selected
         - createdAt
         - updatedAt
+        - transportation_method
       type: object
     AttendeeCreateRequest:
       properties:
-        age:
-          $ref: "#/components/schemas/Age"
+        date_of_birth:
+          $ref: "#/components/schemas/DateOfBirth"
         attendee_type:
           $ref: "#/components/schemas/AttendeeTypeEnum"
           description: ประเภทของผู้เข้าร่วมงาน
@@ -797,6 +877,9 @@ components:
           type: array
         province:
           $ref: "#/components/schemas/ProvinceEnum"
+        district:
+          $ref: "#/components/schemas/District"
+          description: อำเภอหรือเขตของผู้เข้าร่วมงาน
         school_name:
           description: ชื่อโรงเรียนหรือสถาบันการศึกษาของผู้เข้าร่วมงาน
           examples:
@@ -809,14 +892,18 @@ components:
             เป็น 'นักเรียนประถมศึกษา' หรือ 'นักเรียนมัธยมศึกษา'
         surname:
           $ref: "#/components/schemas/Surname"
+        transportation_method:
+          $ref: "#/components/schemas/TransportationMethodEnum"
+          description: วิธีการเดินทางมางาน
       required:
         - firstname
         - surname
         - attendee_type
-        - age
         - province
+        - district
         - news_sources_selected
         - objective_selected
+        - transportation_method
       type: object
     AttendeeID:
       description: UUID ของผู้เข้าร่วมงาน
@@ -858,20 +945,18 @@ components:
       type: object
     AttendeeTicketCode:
       description: รหัสตั๋วของผู้เข้าร่วมงาน
-      pattern: ^[HSPEA]\d{6}$
+      pattern: ^[SPEA]\d{6}$
       type: string
     AttendeeTypeEnum:
       oneOf:
-        - const: elementaryschool
-          title: นักเรียนประถมศึกษา
-        - const: highschool
-          title: นักเรียนมัธยมศึกษา
+        - const: student
+          title: นักเรียน (S)
         - const: parent
-          title: ผู้ปกครอง
+          title: ผู้ปกครอง (P)
         - const: educationstaff
-          title: บุคลากรทางการศึกษา
+          title: บุคลากรทางการศึกษา (E)
         - const: other
-          title: อื่น ๆ
+          title: อื่น ๆ (A)
     AttendeeStatsResponse:
       properties:
         total_registered:
@@ -914,8 +999,8 @@ components:
       type: object
     AttendeeUpdateRequest:
       properties:
-        age:
-          $ref: "#/components/schemas/Age"
+        date_of_birth:
+          $ref: "#/components/schemas/DateOfBirth"
         attendee_type:
           $ref: "#/components/schemas/AttendeeTypeEnum"
           description: ประเภทของผู้เข้าร่วมงาน
@@ -955,6 +1040,9 @@ components:
           type: array
         province:
           $ref: "#/components/schemas/ProvinceEnum"
+        district:
+          $ref: "#/components/schemas/District"
+          description: อำเภอของผู้เข้าร่วมงาน
         school_name:
           description: ชื่อโรงเรียนหรือสถาบันการศึกษาของผู้เข้าร่วมงาน
           examples:
@@ -982,6 +1070,16 @@ components:
               $ref: "#/components/schemas/Staff"
               description: ข้อมูลสตาฟที่ทำการเช็คอินให้ผู้เข้าร่วมงาน (ถ้ามี)
           type: object
+    DateOfBirth:
+      description: วันเดือนปีเกิดของผู้เข้าร่วมงาน
+      format: date
+      type: string
+    District:
+      description: อำเภอของผู้เข้าร่วมงาน
+      examples:
+        - บางรัก
+        - วังทองหลาง
+      type: string
     ErrorResponse:
       properties:
         error:
@@ -1058,6 +1156,19 @@ components:
         - user_id
         - faculty
       type: object
+    FavoriteWorkshopsUpdateRequest:
+      description: เวิร์กช็อปที่ผู้เข้าร่วมงานปัจจุบันชื่นชอบ
+      properties:
+        code:
+          description: รหัสเวิร์กช็อป
+          type: string
+        state:
+          description: สถานะการกด fav เวิร์กช็อป (true = กด fav, false = ลบออก)
+          type: boolean
+      required:
+        - code
+        - state
+      type: object
     InterestedFaculties:
       description: คณะที่สนใจ อย่างน้อย 1 คณะ สูงสุด 4 คณะ
       items:
@@ -1078,14 +1189,36 @@ components:
       description: แหล่งที่มาของข่าวสารเกี่ยวกับงาน
       oneOf:
         - const: Facebook
-          title: Facebook
+          title: Facebook (CU Open House)
+        - const: Instagram
+          title: Instagram
+        - const: X
+          title: X (เดิมคือ Twitter)
+        - const: Tiktok
+          title: Tiktok
+        - const: Camphub
+          title: Camphub
+        - const: Billboard
+          title: ป้ายโฆษณาต่าง ๆ (สยามสแควร์/สามย่าน)
+        - const: WordOfMouth
+          title: ผู้ปกครอง/คนรู้จัก
         - const: other
           title: อื่น ๆ
     ObjectiveEnum:
       description: ตัวเลือกวัตถุประสงค์ในการเข้าร่วมงาน
       oneOf:
+        - const: learnaboutfaculties
+          title: ศึกษารายละเอียดหลักสูตร การเรียนการสอน และเส้นทางอาชีพของคณะต่าง ๆ
+        - const: findmyself
+          title: ค้นหาตนเองและสำรวจความสนใจของตนเอง
+        - const: preparefordecision
+          title: เตรียมความพร้อมก่อนตัดสินใจเลือกคณะหรือมหาวิทยาลัย
+        - const: askaboutadmission
+          title: สอบถามข้อมูลการสมัครเรียน ทุนการศึกษา และเกณฑ์การคัดเลือก
         - const: explorechula
-          title: เยี่ยมชมบรรยากาศของมหาวิทยาลัย
+          title: เพื่อเยี่ยมชมบรรยากาศภายในมหาวิทยาลัยและสิ่งอำนวยความสะดวก
+        - const: talktoteachers
+          title: พูดคุยกับอาจารย์ รุ่นพี่ หรือศิษย์เก่าเกี่ยวกับประสบการณ์การเรียน
         - const: other
           title: อื่น ๆ
     Piece:
@@ -1115,159 +1248,159 @@ components:
       type: string
     ProvinceEnum:
       oneOf:
-        - const: Krabi
+        - const: กระบี่
           title: กระบี่
-        - const: Bangkok
+        - const: กรุงเทพมหานคร
           title: กรุงเทพมหานคร
-        - const: Kanchanaburi
+        - const: กาญจนบุรี
           title: กาญจนบุรี
-        - const: Kalasin
+        - const: กาฬสินธุ์
           title: กาฬสินธุ์
-        - const: Kamphaeng Phet
+        - const: กำแพงเพชร
           title: กำแพงเพชร
-        - const: Khon Kaen
+        - const: ขอนแก่น
           title: ขอนแก่น
-        - const: Chanthaburi
+        - const: จันทบุรี
           title: จันทบุรี
-        - const: Chachoengsao
+        - const: ฉะเชิงเทรา
           title: ฉะเชิงเทรา
-        - const: Chonburi
+        - const: ชลบุรี
           title: ชลบุรี
-        - const: Chai Nat
+        - const: ชัยนาท
           title: ชัยนาท
-        - const: Chaiyaphum
+        - const: ชัยภูมิ
           title: ชัยภูมิ
-        - const: Chumphon
+        - const: ชุมพร
           title: ชุมพร
-        - const: Chiang Rai
+        - const: เชียงราย
           title: เชียงราย
-        - const: Chiang Mai
+        - const: เชียงใหม่
           title: เชียงใหม่
-        - const: Trang
+        - const: ตรัง
           title: ตรัง
-        - const: Trat
+        - const: ตราด
           title: ตราด
-        - const: Tak
+        - const: ตาก
           title: ตาก
-        - const: Nakhon Nayok
+        - const: นครนายก
           title: นครนายก
-        - const: Nakhon Pathom
+        - const: นครปฐม
           title: นครปฐม
-        - const: Nakhon Phanom
+        - const: นครพนม
           title: นครพนม
-        - const: Nakhon Ratchasima
+        - const: นครราชสีมา
           title: นครราชสีมา
-        - const: Nakhon Si Thammarat
+        - const: นครศรีธรรมราช
           title: นครศรีธรรมราช
-        - const: Nakhon Sawan
+        - const: นครสวรรค์
           title: นครสวรรค์
-        - const: Nonthaburi
+        - const: นนทบุรี
           title: นนทบุรี
-        - const: Narathiwat
+        - const: นราธิวาส
           title: นราธิวาส
-        - const: Nan
+        - const: น่าน
           title: น่าน
-        - const: Bueng Kan
+        - const: บึงกาฬ
           title: บึงกาฬ
-        - const: Buriram
+        - const: บุรีรัมย์
           title: บุรีรัมย์
-        - const: Pathum Thani
+        - const: ปทุมธานี
           title: ปทุมธานี
-        - const: Prachuap Khiri Khan
+        - const: ประจวบคีรีขันธ์
           title: ประจวบคีรีขันธ์
-        - const: Prachinburi
+        - const: ปราจีนบุรี
           title: ปราจีนบุรี
-        - const: Pattani
+        - const: ปัตตานี
           title: ปัตตานี
-        - const: Phra Nakhon Si Ayutthaya
+        - const: พระนครศรีอยุธยา
           title: พระนครศรีอยุธยา
-        - const: Phayao
+        - const: พะเยา
           title: พะเยา
-        - const: Phang Nga
+        - const: พังงา
           title: พังงา
-        - const: Phatthalung
+        - const: พัทลุง
           title: พัทลุง
-        - const: Phichit
+        - const: พิจิตร
           title: พิจิตร
-        - const: Phitsanulok
+        - const: พิษณุโลก
           title: พิษณุโลก
-        - const: Phetchaburi
+        - const: เพชรบุรี
           title: เพชรบุรี
-        - const: Phetchabun
+        - const: เพชรบูรณ์
           title: เพชรบูรณ์
-        - const: Phrae
+        - const: แพร่
           title: แพร่
-        - const: Phuket
+        - const: ภูเก็ต
           title: ภูเก็ต
-        - const: Maha Sarakham
+        - const: มหาสารคาม
           title: มหาสารคาม
-        - const: Mukdahan
+        - const: มุกดาหาร
           title: มุกดาหาร
-        - const: Mae Hong Son
+        - const: แม่ฮ่องสอน
           title: แม่ฮ่องสอน
-        - const: Yasothon
+        - const: ยโสธร
           title: ยโสธร
-        - const: Yala
+        - const: ยะลา
           title: ยะลา
-        - const: Roi Et
+        - const: ร้อยเอ็ด
           title: ร้อยเอ็ด
-        - const: Ranong
+        - const: ระนอง
           title: ระนอง
-        - const: Rayong
+        - const: ระยอง
           title: ระยอง
-        - const: Ratchaburi
+        - const: ราชบุรี
           title: ราชบุรี
-        - const: Lopburi
+        - const: ลพบุรี
           title: ลพบุรี
-        - const: Lampang
+        - const: ลำปาง
           title: ลำปาง
-        - const: Lamphun
+        - const: ลำพูน
           title: ลำพูน
-        - const: Loei
+        - const: เลย
           title: เลย
-        - const: Sisaket
+        - const: ศรีสะเกษ
           title: ศรีสะเกษ
-        - const: Sakon Nakhon
+        - const: สกลนคร
           title: สกลนคร
-        - const: Songkhla
+        - const: สงขลา
           title: สงขลา
-        - const: Satun
+        - const: สตูล
           title: สตูล
-        - const: Samut Prakan
+        - const: สมุทรปราการ
           title: สมุทรปราการ
-        - const: Samut Songkhram
+        - const: สมุทรสงคราม
           title: สมุทรสงคราม
-        - const: Samut Sakhon
+        - const: สมุทรสาคร
           title: สมุทรสาคร
-        - const: Sa Kaeo
+        - const: สระแก้ว
           title: สระแก้ว
-        - const: Saraburi
+        - const: สระบุรี
           title: สระบุรี
-        - const: Sing Buri
+        - const: สิงห์บุรี
           title: สิงห์บุรี
-        - const: Sukhothai
+        - const: สุโขทัย
           title: สุโขทัย
-        - const: Suphan Buri
+        - const: สุพรรณบุรี
           title: สุพรรณบุรี
-        - const: Surat Thani
+        - const: สุราษฎร์ธานี
           title: สุราษฎร์ธานี
-        - const: Surin
+        - const: สุรินทร์
           title: สุรินทร์
-        - const: Nong Khai
+        - const: หนองคาย
           title: หนองคาย
-        - const: Nong Bua Lamphu
+        - const: หนองบัวลำภู
           title: หนองบัวลำภู
-        - const: Ang Thong
+        - const: อ่างทอง
           title: อ่างทอง
-        - const: Amnat Charoen
+        - const: อำนาจเจริญ
           title: อำนาจเจริญ
-        - const: Udon Thani
+        - const: อุดรธานี
           title: อุดรธานี
-        - const: Uttaradit
+        - const: อุตรดิตถ์
           title: อุตรดิตถ์
-        - const: Uthai Thani
+        - const: อุทัยธานี
           title: อุทัยธานี
-        - const: Ubon Ratchathani
+        - const: อุบลราชธานี
           title: อุบลราชธานี
     Staff:
       properties:
@@ -1351,30 +1484,20 @@ components:
       oneOf:
         - const: elementary
           title: ประถมศึกษา
-        - const: matthayom1
-          title: มัธยมศึกษาปีที่ 1
-        - const: matthayom2
-          title: มัธยมศึกษาปีที่ 2
-        - const: matthayom3
-          title: มัธยมศึกษาปีที่ 3
-        - const: matthayom4
-          title: มัธยมศึกษาปีที่ 4
-        - const: matthayom5
-          title: มัธยมศึกษาปีที่ 5
-        - const: matthayom6
-          title: มัธยมศึกษาปีที่ 6
-        - const: vocational1
-          title: ปวช. 1
-        - const: vocational2
-          title: ปวช. 2
-        - const: vocational3
-          title: ปวช. 3
-        - const: highervocational1
-          title: ปวส. 1
-        - const: highervocational2
-          title: ปวส. 2
-        - const: highereducation
-          title: อุดมศึกษา
+        - const: matthayom_ton
+          title: มัธยมศึกษาตอนต้น
+        - const: matthayom_plai
+          title: มัธยมศึกษาตอนปลาย
+        - const: vocational
+          title: ปวช. หรือเทียบเท่า
+        - const: highervocational
+          title: ปวส. หรือเทียบเท่า
+        - const: undergraduate
+          title: ปริญญาตรี
+        - const: master
+          title: ปริญญาโท
+        - const: doctor
+          title: ปริญญาเอก
         - const: other
           title: อื่น ๆ
     SuccessResponse:
@@ -1408,6 +1531,13 @@ components:
           description: Google ID Token ที่ได้รับจากการล็อกอินด้วย Google
           type: string
       type: object
+    TransportationMethodEnum:
+      description: วิธีการเดินทางมางาน (ไม่ต้อง validation ก็ได้)
+      type: string
+      examples:
+        - เดิน
+        - รถจักรยานยนต์
+        - รถยนต์ส่วนตัว
     User:
       properties:
         attendeeId:
