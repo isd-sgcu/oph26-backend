@@ -12,6 +12,9 @@ type AttendeeRepository interface {
 	FindByUserID(userID uuid.UUID) (*entity.Attendee, error)
 	FindByTicketCode(ticketCode string) (*entity.Attendee, error)
 	Update(attendee *entity.Attendee, userId uuid.UUID) error
+	Upsert(attendee *entity.Attendee) (bool, error)
+	CountByAttendeeType(attendeeType string) (int64, error)
+	CreateMyPieceAndLink(attendee *entity.Attendee, myPiece *entity.MyPiece) error
 }
 
 type AttendeeRepositoryImpl struct {
@@ -45,6 +48,24 @@ func (r *AttendeeRepositoryImpl) FindByTicketCode(ticketCode string) (*entity.At
 	}
 
 	return &attendee, nil
+}
+
+func (r *AttendeeRepositoryImpl) Upsert(attendee *entity.Attendee) (founded bool, err error) {
+	result := r.DB.Where("user_id = ?", attendee.UserID).FirstOrCreate(attendee)
+	return result.RowsAffected == 0, result.Error
+}
+
+func (r *AttendeeRepositoryImpl) CountByAttendeeType(attendeeType string) (int64, error) {
+	var count int64
+	err := r.DB.Model(&entity.Attendee{}).Where("attendee_type = ?", attendeeType).Count(&count).Error
+	return count, err
+}
+
+func (r *AttendeeRepositoryImpl) CreateMyPieceAndLink(attendee *entity.Attendee, myPiece *entity.MyPiece) error {
+	if err := r.DB.Create(myPiece).Error; err != nil {
+		return err
+	}
+	return nil
 }
 
 func (r *AttendeeRepositoryImpl) Update(attendee *entity.Attendee, userId uuid.UUID) error {

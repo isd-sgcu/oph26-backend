@@ -1,12 +1,18 @@
 package usecase
 
 import (
+	"crypto/rand"
+	"errors"
+	"fmt"
+	"math/big"
 	"oph26-backend/internal/entity"
 	"oph26-backend/internal/model"
 	"oph26-backend/internal/model/attendee"
+	attendeeModel "oph26-backend/internal/model/attendee"
 	"oph26-backend/internal/repository"
 	"regexp"
 	"slices"
+	"time"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
@@ -24,9 +30,10 @@ type AttendeeUsecase interface {
 	GetMyAttendee(c *fiber.Ctx) error
 	GetByAttendeeId(c *fiber.Ctx) error
 	PutAttendee(c *fiber.Ctx) error
+	PostAttendee(c *fiber.Ctx) error
 }
 
-func NewAttendeeUsecase(userRepo repository.UserRepository, attendeeRepo repository.AttendeeRepository) AttendeeUsecase {
+func NewAttendeeUsecase(attendeeRepo repository.AttendeeRepository, userRepo repository.UserRepository) AttendeeUsecase {
 	return &AttendeeUsecaseImpl{
 		userRepo:     userRepo,
 		attendeeRepo: attendeeRepo,
@@ -74,7 +81,7 @@ func (u *AttendeeUsecaseImpl) GetMyAttendee(c *fiber.Ctx) error {
 		})
 	}
 
-	return c.JSON(&model.AttendeeResponse{
+	return c.JSON(&attendeeModel.AttendeeResponse{
 		Age:                           attendee.Age,
 		AttendeeType:                  attendee.AttendeeType,
 		CertificateName:               attendee.CertificateName,
@@ -153,8 +160,8 @@ func (u *AttendeeUsecaseImpl) GetByAttendeeId(c *fiber.Ctx) error {
 		}
 	}
 
-	return c.JSON(&model.AttendeeStaffResponse{
-		AttendeeResponse: model.AttendeeResponse{
+	return c.JSON(&attendeeModel.AttendeeStaffResponse{
+		AttendeeResponse: attendeeModel.AttendeeResponse{
 			Age:                           attendee.Age,
 			AttendeeType:                  attendee.AttendeeType,
 			CertificateName:               attendee.CertificateName,
@@ -180,6 +187,204 @@ func (u *AttendeeUsecaseImpl) GetByAttendeeId(c *fiber.Ctx) error {
 		},
 		CheckinStaff: checkinStaff,
 	})
+}
+
+func (u *AttendeeUsecaseImpl) PostAttendee(c *fiber.Ctx) error {
+	userIdRaw, ok := c.Locals("user_id").(string)
+	if !ok {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid user_id",
+		})
+	}
+
+	userId, err := uuid.Parse(userIdRaw)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid user_id",
+		})
+	}
+
+	// staff only
+	role := c.Locals("role").(string)
+	if role == "staff" {
+		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
+			"error": "This is for self-registration. (non staff only)",
+		})
+	}
+
+	request := new(attendeeModel.AttendeeCreateRequest)
+	if err := c.BodyParser(request); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Cannot parse JSON",
+		})
+	}
+
+	// Validation
+	validate := validator.New()
+	if err := validate.Struct(request); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Fail to validate JSON",
+		})
+	}
+
+	if !model.NewsSourcesAreValid(request.NewsSourceSelected) {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid request body; unknown news source",
+		})
+	}
+
+	if slices.Contains(request.NewsSourceSelected, string(model.OtherNewsSource)) && request.NewsSourcesOther == nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid request body; news_sources_selected is 'อื่น ๆ', but news_sources_other is not provided",
+		})
+	}
+
+	if slices.Contains(request.ObjectiveSelected, string(model.OtherObjective)) && request.ObjectiveOther == nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid request body; objective_selected is 'อื่น ๆ', but objective_other is not provided",
+		})
+	}
+
+	if !model.ProvinceIsValid(request.Province) {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid request body; unknown province",
+		})
+	}
+
+	if request.StudyLevel != nil && !model.StudyLevelIsValid(*request.StudyLevel) {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid request body; unknown study_level",
+		})
+	}
+
+	// validate options array
+	arr := []string(request.InterestedFaculty)
+	if !model.FacultiesAreValid(arr) {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid request body; unknown faculty",
+		})
+	}
+
+	arr = []string(request.ObjectiveSelected)
+	if !model.ObjectivesAreValid(arr) {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid request body; unknown objective",
+		})
+	}
+
+	code, codeErr := generatePieceCode()
+	if codeErr != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Cannot generate piece code",
+		})
+	}
+
+	// Generate ticket code, please refer to the docs (บรีฟเว็บไซต์ section)
+	// note that their might be multiple user doing this simultaneously, so
+	// we are just going to loop until its successfully created
+	retryCount := 5 // exponential backoff???
+
+	for retryCount > 0 {
+		retryCount -= 1
+
+		ticketCode, ticketCodeErr := u.generateTicketCode(request.AttendeeType)
+		if ticketCodeErr != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": "Internal DB error",
+			})
+		}
+
+		attendee := entity.Attendee{
+			UserID:                        userId,
+			Firstname:                     request.Firstname,
+			Surname:                       request.Surname,
+			AttendeeType:                  request.AttendeeType,
+			Age:                           request.Age,
+			Province:                      request.Province,
+			StudyLevel:                    request.StudyLevel,
+			SchoolName:                    request.SchoolName,
+			NewsSourceSelected:            request.NewsSourceSelected,
+			NewsSourcesOther:              request.NewsSourcesOther,
+			InterestedFaculty:             request.InterestedFaculty,
+			InitialFirstInterestedFaculty: request.InterestedFaculty[0],
+			ObjectiveSelected:             request.ObjectiveSelected,
+			ObjectiveOther:                request.ObjectiveOther,
+			TicketCode:                    ticketCode,
+		}
+
+		founded, err2 := u.attendeeRepo.Upsert(&attendee)
+		// TODO: this might need `TranslateError: true`
+		if errors.Is(err2, gorm.ErrDuplicatedKey) {
+			continue
+		}
+		if err2 != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": "Internal DB error",
+			})
+		}
+		if founded {
+			return c.Status(fiber.StatusConflict).JSON(fiber.Map{
+				"error": "Attendee already exists",
+			})
+		}
+
+		if request.AttendeeType == "highschool" {
+			myPiece := entity.MyPiece{
+				AttendeeID: attendee.ID,
+				PieceCode:  code,
+				ExpireDate: time.Now().Add(24 * time.Hour),
+			}
+			if err := u.attendeeRepo.CreateMyPieceAndLink(&attendee, &myPiece); err != nil {
+				return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+					"error": "Failed to create MyPiece",
+				})
+			}
+		}
+
+	}
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"ok": true,
+	})
+}
+
+const charset = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+
+// ^[A-Z0-9]{6}$
+func generatePieceCode() (string, error) {
+	b := make([]byte, 6)
+	for i := range b {
+		index, err := rand.Int(rand.Reader, big.NewInt(int64(len(charset))))
+		if err != nil {
+			return "", err
+		}
+		b[i] = charset[index.Int64()]
+	}
+
+	return string(b), nil
+}
+
+func (u *AttendeeUsecaseImpl) generateTicketCode(attendeeType string) (string, error) {
+	ticketCodePrefix := "A"
+	switch attendeeType {
+	case "elementaryschool":
+		ticketCodePrefix = "S"
+	case "highschool":
+		ticketCodePrefix = "H"
+	case "parent":
+		ticketCodePrefix = "P"
+	case "educationstaff":
+		ticketCodePrefix = "E"
+	case "other":
+		ticketCodePrefix = "A"
+	}
+
+	count, err := u.attendeeRepo.CountByAttendeeType(attendeeType)
+	if err != nil {
+		return "", err
+	}
+
+	return ticketCodePrefix + fmt.Sprintf("%06d", count+1), nil
 }
 
 func (u *AttendeeUsecaseImpl) PutAttendee(c *fiber.Ctx) error {

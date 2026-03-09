@@ -27,7 +27,7 @@ func main() {
 	pieceRepo := repository.NewPieceRepository(config.DB)
 	userUsecase := usecase.NewUserUsecase(userRepo)
 	attendeeRepo := repository.NewAttendeeRepository(config.DB)
-	attendeeUsecase := usecase.NewAttendeeUsecase(userRepo, attendeeRepo)
+	attendeeUsecase := usecase.NewAttendeeUsecase(attendeeRepo, userRepo)
 	authUsecase := usecase.NewAuthUsecase(userRepo, cfg.GoogleClientID, cfg.JWTSecret)
 	pieceUsecase := usecase.NewPieceUsecase(pieceRepo)
 
