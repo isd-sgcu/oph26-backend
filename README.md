@@ -140,7 +140,8 @@ erDiagram
     MyPieces     ||--||  Attendees: user_pieces
     Leaderboards ||--||  Attendees: top_scorers
     Scores       }|--||  Attendees: score
-    Attendees    }|--||  Staffs: checkin_staff
+    Attendees    }|--||  CheckInRecords: check_in_records
+    CheckInRecords }|--|| Staffs: staff_id
 
     Users {
         string id PK "not null, UUID"
@@ -158,8 +159,10 @@ erDiagram
         string firstname "not null"
         string surname "not null"
         string attendee_type "not null, enum: Matthayom, Prathom, Parent, EducationStaff, Other"
-        int age "not null"
+        datetime birthdate "not null"
+        %% จังหวัด & อำเภอ/เขต
         string province "not null"
+        string district "not null"
         string study_level "nullable, for Student type (Matthayom/Prathom)"
         string school_name "nullable, for Student type (Matthayom/Prathom)"
         string[] news_sources_selected "nullable, array of selected values"
@@ -167,15 +170,13 @@ erDiagram
         string initial_first_interested_faculty "not null"
         string[] interested_faculty "not null, array of interested faculty"
         string[] objective_selected "nullable, array of selected values"
+        string transportation_method "nullable, enum: eg. car, public_transport, walk, other"
         string objective_other "nullable, conditional other"
         string(7) ticket_code UK "not null,<br/>C000000, prefix consult docs"
         datetime created_at "not null"
         datetime updated_at "not null"
         string my_piece_id FK "nullable, uuid"
         string certificate_name "nullable"
-        %% checkedin
-        datetime checked_in_at "nullable"
-        string checkin_staff_id FK "nullable"
         %% workshops
         string[] favorite_workshops "nullable, array of id of attendee's favorite workshops"
     }
@@ -211,6 +212,14 @@ erDiagram
     Scores {
         string user_id UK, FK, PK "not null"
         int[20] count "not null, default 0, array of pieces count per faculty"
+    }
+
+    CheckInRecords {
+        string user_id FK, PK "not null"
+        string faculty PK  "not null, faculty from the staff account who checked in the attendee"
+        string staff_id FK "not null, staff account who checked in the attendee"
+        datetime checked_in_at "not null"
+        %% Maybe adding index on (user_id, faculty) for faster lookup of check-in status per faculty
     }
 
 
