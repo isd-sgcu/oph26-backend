@@ -8,6 +8,7 @@ type Config struct {
 	DataBaseURL    string
 	JWTSecret      string
 	GoogleClientID string
+	AppEnv         string
 }
 
 func LoadEnv() *Config {
@@ -15,6 +16,7 @@ func LoadEnv() *Config {
 		DataBaseURL:    getEnv("DATABASE_URL", ""),
 		JWTSecret:      getEnv("JWT_SECRET", "secret"),
 		GoogleClientID: getEnv("GOOGLE_CLIENT_ID", ""),
+		AppEnv:         getEnv("APP_ENV", "development"),
 	}
 }
 

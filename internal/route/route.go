@@ -8,9 +8,18 @@ import (
 	"oph26-backend/internal/usecase"
 )
 
+type RouteConfig struct {
+	AuthUsecase         usecase.AuthUsecase
+	AttendeeUsecase     usecase.AttendeesUsecase
+	UserUsecase         usecase.UserUsecase
+	PieceUsecase        usecase.PieceUsecase
+	AuthMiddleware      fiber.Handler
+	RateLimitMiddleware fiber.Handler
+}
+
 var startTime = time.Now()
 
-func SetupRoutes(r *fiber.App, authUsecase usecase.AuthUsecase, userUseCase usecase.UserUsecase, attendeeUsecase usecase.AttendeeUsecase, pieceUsecase usecase.PieceUsecase, authMiddleware fiber.Handler) {
+func SetupRoutes(r *fiber.App, c RouteConfig) {
 	r.Get("/healthz", func(c *fiber.Ctx) error {
 		uptime := time.Since(startTime).String()
 		return c.JSON(fiber.Map{
@@ -23,28 +32,18 @@ func SetupRoutes(r *fiber.App, authUsecase usecase.AuthUsecase, userUseCase usec
 	{
 		api.Get("/ping", usecase.Ping)
 
-		// Example of protected route (as per requirement, but applies generally)
-		// attendees := api.Group("/attendees", authMiddleware)
-		// attendees.Post("/", ...)
-		// Delivery Layer: HTTP handlers that call Use Cases
-		// api.Get("/users", userUsecase.GetAllUsers)
-
 		auth := api.Group("/auth")
 		{
-			auth.Post("/token", authUsecase.Login)
-		}
-		attendees := api.Group("/attendees", authMiddleware)
-		{
-			attendees.Get("/me", attendeeUsecase.GetMyAttendee)
-			attendees.Put("/me", attendeeUsecase.PutAttendee)
-			attendees.Get("/:attendeeId", attendeeUsecase.GetByAttendeeId)
-			attendees.Post("/", attendeeUsecase.PostAttendee)
+			auth.Post("/token", c.RateLimitMiddleware, c.AuthUsecase.Login)
+			auth.Get("/me", c.RateLimitMiddleware, c.AuthMiddleware, c.AuthUsecase.GetCurrentUser)
+			auth.Post("/refresh", c.RateLimitMiddleware, c.AuthUsecase.RefreshToken)
+			auth.Post("/signOut", c.RateLimitMiddleware, c.AuthMiddleware, c.AuthUsecase.SignOut)
 		}
 
-		pieces := api.Group("/pieces", authMiddleware)
+		attendees := api.Group("/attendees", c.AuthMiddleware)
 		{
-			pieces.Get("/me", pieceUsecase.GetMyPiece)
-			pieces.Get("/me/collected", pieceUsecase.GetCollectedPieces)
+			attendees.Get("/me", c.AttendeeUsecase.GetMyAttendee)
+			attendees.Get("/:attendeeId", c.AttendeeUsecase.GetByAttendeeId)
 		}
 	}
 }

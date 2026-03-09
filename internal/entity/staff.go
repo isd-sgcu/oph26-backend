@@ -19,5 +19,5 @@ type Staff struct {
 	Faculty   string     `gorm:"type:text;not null"`
 	CreatedAt time.Time
 	UpdatedAt time.Time
-	User User `gorm:"foreignKey:UserID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL"`
+	User      User `gorm:"foreignKey:UserID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL"`
 }
