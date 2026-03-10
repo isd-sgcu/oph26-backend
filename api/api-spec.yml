@@ -267,6 +267,38 @@ paths:
           $ref: "#/components/responses/UnauthorizedResponse"
         "403":
           $ref: "#/components/responses/ForbiddenResponse"
+        "404":
+          content:
+            application/json:
+              examples:
+                FavoriteWorkshopsNotSetExample:
+                  description: >-
+                    ตัวอย่างการตอบกลับเมื่อผู้ใช้ที่ล็อกอินยังไม่ได้ลงทะเบียน
+                  summary: ผู้ใช้ยังไม่ได้ลงทะเบียน
+                  value:
+                    error: Favorite workshops not found for the current user
+                WorkshopIdToRemoveNotInFavoriteExample:
+                  description: >-
+                    ตัวอย่างการตอบกลับเมื่อพยายามลบเวิร์กช็อปที่ไม่ได้อยู่ในรายการชื่นชอบ
+                  summary: Workshop ID to Remove Not in Favorite Example
+                  value:
+                    error: Cannot remove a workshop that's not in the attendee's list of favorite workshop
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: Not Found, favorite workshops data for the current user does not exist (user might not have registered yet)
+        "409":
+          content:
+            application/json:
+              examples:
+                CantRemoveUnselectedWorkshopsExample:
+                  description: >-
+                    ตัวอย่างการตอบกลับเมื่อพยายามลบเวิร์กช็อปที่ไม่ได้เลือกตั้งแต่แรก
+                  summary: Can't Remove Unselected Workshops Example
+                  value:
+                    error: Cannot remove a workshop that's not in the attendee's list of favorite workshop
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: Conflict, cannot select more than 4 favorite workshops
         "500":
           $ref: "#/components/responses/InternalServerErrorResponse"
       security:

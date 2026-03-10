@@ -53,5 +53,11 @@ func SetupRoutes(r *fiber.App, c RouteConfig) {
 			pieces.Get("/me", c.PieceUsecase.GetMyPiece)
 			pieces.Get("/me/collected", c.PieceUsecase.GetCollectedPieces)
 		}
+
+		favWorkshop := api.Group("/favorite_workshops", c.AuthMiddleware)
+		{
+			favWorkshop.Get("/me", c.AttendeeUsecase.GetMyFavWorkshops)
+			favWorkshop.Put("/me", c.AttendeeUsecase.PutMyFavWorkshops)
+		}
 	}
 }
