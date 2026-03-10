@@ -30,3 +30,8 @@ type PutAttendeesRequest struct {
 	ObjectiveSelected  *pq.StringArray `json:"objective_selected" validate:"omitempty,min=1"`
 	ObjectiveOther     *string         `json:"objective_other" validate:"omitempty,max=200"`
 }
+
+type UpdateCertificateNameRequest struct {
+	Name    string `json:"name" validate:"required,max=200"`
+	Surname string `json:"surname" validate:"required,max=200"`
+}

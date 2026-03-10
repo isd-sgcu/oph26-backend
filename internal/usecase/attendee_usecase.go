@@ -31,6 +31,7 @@ type AttendeeUsecase interface {
 	GetByAttendeeId(c *fiber.Ctx) error
 	PutAttendee(c *fiber.Ctx) error
 	PostAttendee(c *fiber.Ctx) error
+	UpdateCertificateName(c *fiber.Ctx) error
 }
 
 func NewAttendeeUsecase(attendeeRepo repository.AttendeeRepository, userRepo repository.UserRepository) AttendeeUsecase {
@@ -535,6 +536,65 @@ func (u *AttendeeUsecaseImpl) PutAttendee(c *fiber.Ctx) error {
 			})
 		}
 
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Internal DB error",
+		})
+	}
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"ok": true,
+	})
+}
+
+func (u *AttendeeUsecaseImpl) UpdateCertificateName(c *fiber.Ctx) error {
+	userIdStr, ok := c.Locals("user_id").(string)
+	if !ok {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Could not assert user_id from JWT as string",
+		})
+	}
+	userId, parseErr := uuid.Parse(userIdStr)
+	if parseErr != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid user_id",
+		})
+	}
+
+	if role, ok := c.Locals("role").(string); !ok {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Could not assert role from JWT as string",
+		})
+	} else if role == "staff" {
+		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
+			"error": "Forbidden, staff accounts cannot update certificate name",
+		})
+	}
+
+	var reqBody attendee.UpdateCertificateNameRequest
+	if err := c.BodyParser(&reqBody); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid request body",
+		})
+	}
+
+	if err := u.validate.Struct(reqBody); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid request body; name and surname are required",
+		})
+	}
+
+	certName := reqBody.Name + " " + reqBody.Surname
+	updateStruct := entity.Attendee{
+		CertificateName: &certName,
+	}
+
+	updateErr := u.attendeeRepo.Update(&updateStruct, userId)
+	if updateErr != nil {
+		if updateErr == gorm.ErrRecordNotFound {
+			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+				"error": "Attendee not found",
+			})
+		}
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "Internal DB error",
 		})

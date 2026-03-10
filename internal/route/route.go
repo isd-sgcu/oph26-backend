@@ -45,6 +45,7 @@ func SetupRoutes(r *fiber.App, c RouteConfig) {
 			attendees.Post("/", c.AttendeeUsecase.PostAttendee)
 			attendees.Get("/me", c.AttendeeUsecase.GetMyAttendee)
 			attendees.Put("/me", c.AttendeeUsecase.PutAttendee)
+			attendees.Put("/me/certificate-name", c.AttendeeUsecase.UpdateCertificateName)
 			attendees.Get("/:attendeeId", c.AttendeeUsecase.GetByAttendeeId)
 		}
 
