@@ -390,16 +390,10 @@ func (u *AttendeeUsecaseImpl) generateTicketCode(attendeeType string) (string, e
 }
 
 func (u *AttendeeUsecaseImpl) PutAttendee(c *fiber.Ctx) error {
-	userIdStr, ok := c.Locals("user_id").(string)
+	userId, ok := c.Locals("user_id").(uuid.UUID)
 	if !ok {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Could not assert user_id from JWT as string",
-		})
-	}
-	userId, parseErr := uuid.Parse(userIdStr)
-	if parseErr != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid user_id",
+			"error": "Could not assert user_id from JWT as uuid",
 		})
 	}
 
