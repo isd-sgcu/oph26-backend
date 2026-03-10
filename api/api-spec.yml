@@ -267,6 +267,32 @@ paths:
           $ref: "#/components/responses/UnauthorizedResponse"
         "403":
           $ref: "#/components/responses/ForbiddenResponse"
+        "404":
+          content:
+            application/json:
+              examples:
+                FavoriteWorkshopsNotSetExample:
+                  description: >-
+                    ตัวอย่างการตอบกลับเมื่อผู้ใช้ที่ล็อกอินยังไม่ได้ลงทะเบียน
+                  summary: ผู้ใช้ยังไม่ได้ลงทะเบียน
+                  value:
+                    error: Favorite workshops not found for the current user
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: Not Found, favorite workshops data for the current user does not exist (user might not have registered yet)
+        "409":
+          content:
+            application/json:
+              examples:
+                AlreadySelectedWorkshopsExample:
+                  description: >-
+                    ตัวอย่างการตอบกลับเมื่อพยายามเลือกเวิร์กช็อปที่เคยเลือกไปแล้ว
+                  summary: Already Selected Workshops Example
+                  value:
+                    error: Cannot select the same workshop more than once
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: Conflict, cannot select more than 4 favorite workshops
         "500":
           $ref: "#/components/responses/InternalServerErrorResponse"
       security:
