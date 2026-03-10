@@ -577,7 +577,7 @@ func (u *AttendeeUsecaseImpl) GetMyFavWorkshops(c *fiber.Ctx) error {
 	}
 
 	return c.JSON(&attendeeModel.GetFavoriteWorkshopResponse{
-		FavoriteWorkshop: favWorkshopSet.ToSlice(),
+		FavoriteWorkshops: favWorkshopSet.ToSlice(),
 	})
 }
 

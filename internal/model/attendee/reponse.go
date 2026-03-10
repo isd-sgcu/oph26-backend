@@ -38,5 +38,5 @@ type AttendeeStaffResponse struct {
 }
 
 type GetFavoriteWorkshopResponse struct {
-	FavoriteWorkshop []string `json:"favorite_workshop"`
+	FavoriteWorkshops []string `json:"favorite_workshops"`
 }
