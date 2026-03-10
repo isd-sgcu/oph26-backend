@@ -43,20 +43,18 @@ func main() {
 	attendeeRepo := repository.NewAttendeeRepository(config.DB)
 	attendeeUsecase := usecase.NewAttendeeUsecase(attendeeRepo, userRepo)
 	pieceUsecase := usecase.NewPieceUsecase(pieceRepo)
-	favWorkshopUsecase := usecase.NewFavoriteWorkshopUsecase(userRepo, attendeeRepo)
 
 	// Init Middleware
 	authMiddleware := middleware.NewAuthMiddleware(cfg.JWTSecret)
 	rateLimitMiddleWare := middleware.RateLimitMiddleware(10, time.Minute) // 10 requests per minute
 
 	route.SetupRoutes(r, route.RouteConfig{
-		AuthUsecase:             authUsecase,
-		AttendeeUsecase:         attendeeUsecase,
-		AuthMiddleware:          authMiddleware,
-		UserUsecase:             userUsecase,
-		PieceUsecase:            pieceUsecase,
-		FavoriteWorkshopUsecase: favWorkshopUsecase,
-		RateLimitMiddleware:     rateLimitMiddleWare,
+		AuthUsecase:         authUsecase,
+		AttendeeUsecase:     attendeeUsecase,
+		AuthMiddleware:      authMiddleware,
+		UserUsecase:         userUsecase,
+		PieceUsecase:        pieceUsecase,
+		RateLimitMiddleware: rateLimitMiddleWare,
 	})
 
 	log.Fatal(r.Listen(":8080"))

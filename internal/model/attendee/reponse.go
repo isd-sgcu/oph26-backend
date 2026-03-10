@@ -36,3 +36,7 @@ type AttendeeStaffResponse struct {
 	AttendeeResponse
 	CheckinStaff *model.StaffResponse `json:"checkin_staff"`
 }
+
+type GetFavoriteWorkshopResponse struct {
+	FavoriteWorkshop []string `json:"favorite_workshop"`
+}

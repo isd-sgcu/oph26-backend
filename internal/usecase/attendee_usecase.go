@@ -31,6 +31,8 @@ type AttendeeUsecase interface {
 	GetByAttendeeId(c *fiber.Ctx) error
 	PutAttendee(c *fiber.Ctx) error
 	PostAttendee(c *fiber.Ctx) error
+	GetMyFavWorkshops(c *fiber.Ctx) error
+	PutMyFavWorkshops(c *fiber.Ctx) error
 }
 
 func NewAttendeeUsecase(attendeeRepo repository.AttendeeRepository, userRepo repository.UserRepository) AttendeeUsecase {
@@ -543,4 +545,54 @@ func (u *AttendeeUsecaseImpl) PutAttendee(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
 		"ok": true,
 	})
+}
+
+func (u *AttendeeUsecaseImpl) GetMyFavWorkshops(c *fiber.Ctx) error {
+	role, ok := c.Locals("role").(string)
+	if !ok {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to assert role from JWT as string",
+		})
+	}
+
+	userIdStr, ok := c.Locals("user_id").(string)
+	if !ok {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Could not assert user_id from JWT as string",
+		})
+	}
+	userId, parseErr := uuid.Parse(userIdStr)
+	if parseErr != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid user_id",
+		})
+	}
+
+	// TODO: Auth here
+	if role == "staff" {
+		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
+			"error": "Forbidden, staff accounts cannot access attendee data",
+		})
+	}
+
+	favWorkshopSet, getWorkshopErr := u.attendeeRepo.GetFavWorkshop(userId)
+	if getWorkshopErr != nil {
+		if getWorkshopErr == gorm.ErrRecordNotFound {
+			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+				"error": "User not found",
+			})
+		}
+
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Internal DB error",
+		})
+	}
+
+	return c.JSON(&attendeeModel.GetFavoriteWorkshopResponse{
+		FavoriteWorkshop: favWorkshopSet.ToSlice(),
+	})
+}
+
+func (u *AttendeeUsecaseImpl) PutMyFavWorkshops(c *fiber.Ctx) error {
+	return nil
 }

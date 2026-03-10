@@ -9,13 +9,12 @@ import (
 )
 
 type RouteConfig struct {
-	AuthUsecase             usecase.AuthUsecase
-	AttendeeUsecase         usecase.AttendeeUsecase
-	UserUsecase             usecase.UserUsecase
-	PieceUsecase            usecase.PieceUsecase
-	FavoriteWorkshopUsecase usecase.FavoriteWorkshopUseCase
-	AuthMiddleware          fiber.Handler
-	RateLimitMiddleware     fiber.Handler
+	AuthUsecase         usecase.AuthUsecase
+	AttendeeUsecase     usecase.AttendeeUsecase
+	UserUsecase         usecase.UserUsecase
+	PieceUsecase        usecase.PieceUsecase
+	AuthMiddleware      fiber.Handler
+	RateLimitMiddleware fiber.Handler
 }
 
 var startTime = time.Now()
@@ -57,8 +56,8 @@ func SetupRoutes(r *fiber.App, c RouteConfig) {
 
 		favWorkshop := api.Group("/favorite_workshops", c.AuthMiddleware)
 		{
-			favWorkshop.Get("/me", c.FavoriteWorkshopUsecase.GetMyFavWorkshops)
-			favWorkshop.Put("/me", c.FavoriteWorkshopUsecase.PutMyFavWorkshops)
+			favWorkshop.Get("/me", c.AttendeeUsecase.GetMyFavWorkshops)
+			favWorkshop.Put("/me", c.AttendeeUsecase.PutMyFavWorkshops)
 		}
 	}
 }
