@@ -277,6 +277,12 @@ paths:
                   summary: ผู้ใช้ยังไม่ได้ลงทะเบียน
                   value:
                     error: Favorite workshops not found for the current user
+                WorkshopIdToRemoveNotInFavoriteExample:
+                  description: >-
+                    ตัวอย่างการตอบกลับเมื่อพยายามลบเวิร์กช็อปที่ไม่ได้อยู่ในรายการชื่นชอบ
+                  summary: Workshop ID to Remove Not in Favorite Example
+                  value:
+                    error: Cannot remove a workshop that's not in the attendee's list of favorite workshop
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
           description: Not Found, favorite workshops data for the current user does not exist (user might not have registered yet)
@@ -284,12 +290,12 @@ paths:
           content:
             application/json:
               examples:
-                AlreadySelectedWorkshopsExample:
+                CantRemoveUnselectedWorkshopsExample:
                   description: >-
-                    ตัวอย่างการตอบกลับเมื่อพยายามเลือกเวิร์กช็อปที่เคยเลือกไปแล้ว
-                  summary: Already Selected Workshops Example
+                    ตัวอย่างการตอบกลับเมื่อพยายามลบเวิร์กช็อปที่ไม่ได้เลือกตั้งแต่แรก
+                  summary: Can't Remove Unselected Workshops Example
                   value:
-                    error: Cannot select the same workshop more than once
+                    error: Cannot remove a workshop that's not in the attendee's list of favorite workshop
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
           description: Conflict, cannot select more than 4 favorite workshops
