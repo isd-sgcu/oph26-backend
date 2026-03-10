@@ -30,3 +30,8 @@ type PutAttendeesRequest struct {
 	ObjectiveSelected  *pq.StringArray `json:"objective_selected" validate:"omitempty,min=1"`
 	ObjectiveOther     *string         `json:"objective_other" validate:"omitempty,max=200"`
 }
+
+type PutFavoriteWorkshopsRequest struct {
+	Code  string `json:"code"`
+	State bool   `json:"state"`
+}
