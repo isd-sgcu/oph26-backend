@@ -24,7 +24,7 @@ func InitDB(cfg *Config) {
 		log.Fatal("Failed to create uuid-ossp extension:", err)
 		return
 	}
-	err = DB.AutoMigrate(&entity.User{}, &entity.Score{}, &entity.Leaderboard{}, &entity.Staff{}, &entity.Attendee{}, &entity.MyPiece{}, &entity.CollectedPiece{}, &entity.RefreshToken{})
+	err = DB.AutoMigrate(&entity.User{}, &entity.Score{}, &entity.Leaderboard{}, &entity.Staff{}, &entity.Attendee{}, &entity.MyPiece{}, &entity.CollectedPiece{}, &entity.RefreshToken{}, &entity.Questionnaire{})
 	if err != nil {
 		log.Fatal("Failed to migrate database:", err)
 		return
