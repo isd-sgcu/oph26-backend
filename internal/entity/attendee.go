@@ -1,6 +1,7 @@
 package entity
 
 import (
+	"database/sql/driver"
 	"time"
 
 	"github.com/google/uuid"
@@ -31,7 +32,45 @@ type Attendee struct {
 	CheckinStaffID                *uuid.UUID `gorm:"type:uuid"`
 	CheckinStaff                  *Staff     `gorm:"foreignKey:CheckinStaffID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL"`
 	CheckedInAt                   *time.Time
-	FavoriteWorkshops             pq.StringArray `gorm:"type:text[]"`
+	FavoriteWorkshops             StringSet `gorm:"type:text[]"`
 	CreatedAt                     time.Time
 	UpdatedAt                     time.Time
+}
+
+type StringSet map[string]struct{}
+
+func (s *StringSet) Scan(value any) error {
+	if value == nil {
+		*s = make(StringSet)
+		return nil
+	}
+	var arr pq.StringArray
+	if err := arr.Scan(value); err != nil {
+		return err
+	}
+	set := make(StringSet)
+	for _, item := range arr {
+		set[item] = struct{}{}
+	}
+	*s = set
+	return nil
+}
+
+func (s StringSet) Value() (driver.Value, error) {
+	if s == nil {
+		return pq.StringArray{}.Value()
+	}
+	arr := make([]string, 0, len(s))
+	for item := range s {
+		arr = append(arr, item)
+	}
+	return pq.StringArray(arr).Value()
+}
+
+func (s StringSet) ToSlice() []string {
+	result := make([]string, 0, len(s))
+	for item := range s {
+		result = append(result, item)
+	}
+	return result
 }

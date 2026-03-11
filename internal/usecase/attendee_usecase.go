@@ -31,6 +31,8 @@ type AttendeeUsecase interface {
 	GetByAttendeeId(c *fiber.Ctx) error
 	PutAttendee(c *fiber.Ctx) error
 	PostAttendee(c *fiber.Ctx) error
+	GetMyFavWorkshops(c *fiber.Ctx) error
+	PutMyFavWorkshops(c *fiber.Ctx) error
 }
 
 func NewAttendeeUsecase(attendeeRepo repository.AttendeeRepository, userRepo repository.UserRepository) AttendeeUsecase {
@@ -88,7 +90,7 @@ func (u *AttendeeUsecaseImpl) GetMyAttendee(c *fiber.Ctx) error {
 		CheckedInAt:                   attendee.CheckedInAt,
 		CheckinStaffID:                attendee.CheckinStaffID,
 		CreatedAt:                     attendee.CreatedAt,
-		FavoriteWorkshops:             attendee.FavoriteWorkshops,
+		FavoriteWorkshops:             attendee.FavoriteWorkshops.ToSlice(),
 		Firstname:                     attendee.Firstname,
 		ID:                            attendee.ID,
 		InitialFirstInterestedFaculty: attendee.InitialFirstInterestedFaculty,
@@ -168,7 +170,7 @@ func (u *AttendeeUsecaseImpl) GetByAttendeeId(c *fiber.Ctx) error {
 			CheckedInAt:                   attendee.CheckedInAt,
 			CheckinStaffID:                attendee.CheckinStaffID,
 			CreatedAt:                     attendee.CreatedAt,
-			FavoriteWorkshops:             attendee.FavoriteWorkshops,
+			FavoriteWorkshops:             attendee.FavoriteWorkshops.ToSlice(),
 			Firstname:                     attendee.Firstname,
 			ID:                            attendee.ID,
 			InitialFirstInterestedFaculty: attendee.InitialFirstInterestedFaculty,
@@ -388,16 +390,10 @@ func (u *AttendeeUsecaseImpl) generateTicketCode(attendeeType string) (string, e
 }
 
 func (u *AttendeeUsecaseImpl) PutAttendee(c *fiber.Ctx) error {
-	userIdStr, ok := c.Locals("user_id").(string)
+	userId, ok := c.Locals("user_id").(uuid.UUID)
 	if !ok {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Could not assert user_id from JWT as string",
-		})
-	}
-	userId, parseErr := uuid.Parse(userIdStr)
-	if parseErr != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid user_id",
+			"error": "Could not assert user_id from JWT as uuid",
 		})
 	}
 
@@ -541,6 +537,132 @@ func (u *AttendeeUsecaseImpl) PutAttendee(c *fiber.Ctx) error {
 	}
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"ok": true,
+	})
+}
+
+func (u *AttendeeUsecaseImpl) GetMyFavWorkshops(c *fiber.Ctx) error {
+	role, ok := c.Locals("role").(string)
+	if !ok {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Failed to assert role from JWT as string",
+		})
+	}
+
+	userId, ok := c.Locals("user_id").(uuid.UUID)
+	if !ok {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Could not assert user_id from JWT as uuid",
+		})
+	}
+
+	// TODO: Auth here
+	if role == "staff" {
+		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
+			"error": "Forbidden, staff accounts cannot access attendee data",
+		})
+	}
+
+	favWorkshopSet, getWorkshopErr := u.attendeeRepo.GetFavWorkshop(userId)
+	if getWorkshopErr != nil {
+		if getWorkshopErr == gorm.ErrRecordNotFound {
+			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+				"error": "User not found",
+			})
+		}
+
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Internal DB error",
+		})
+	}
+
+	return c.JSON(&attendeeModel.GetFavoriteWorkshopResponse{
+		FavoriteWorkshops: favWorkshopSet.ToSlice(),
+	})
+}
+
+func (u *AttendeeUsecaseImpl) PutMyFavWorkshops(c *fiber.Ctx) error {
+	role, ok := c.Locals("role").(string)
+	if !ok {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Failed to assert role from JWT as string",
+		})
+	}
+
+	userId, ok := c.Locals("user_id").(uuid.UUID)
+	if !ok {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Could not assert user_id from JWT as uuid",
+		})
+	}
+
+	// TODO: Auth here
+	if role == "staff" {
+		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
+			"error": "Forbidden, staff accounts cannot access attendee data",
+		})
+	}
+
+	var reqBody attendee.PutFavoriteWorkshopsRequest
+	if err := c.BodyParser(&reqBody); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid request body",
+		})
+	}
+
+	favWorkshopSet, getWorkshopErr := u.attendeeRepo.GetFavWorkshop(userId)
+	if getWorkshopErr != nil {
+		if getWorkshopErr == gorm.ErrRecordNotFound {
+			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+				"error": "User not found",
+			})
+		}
+
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Internal DB error",
+		})
+	}
+
+	arr := favWorkshopSet.ToSlice()
+	idx := slices.Index(arr, reqBody.Code)
+	if reqBody.State == true {
+		if idx != -1 {
+			return c.Status(fiber.StatusConflict).JSON(fiber.Map{
+				"error": "Attendee already put this workshop as favorite",
+			})
+		}
+		arr = append(arr, reqBody.Code)
+	} else {
+		if idx == -1 {
+			return c.Status(fiber.StatusConflict).JSON(fiber.Map{
+				"error": "Cannot remove a workshop that's not in the attendee's list of favorite workshop",
+			})
+		}
+		arr = append(arr[:idx], arr[idx+1:]...)
+	}
+
+	newSet := make(entity.StringSet)
+	for _, ws := range arr {
+		newSet[ws] = struct{}{}
+	}
+
+	updateStruct := entity.Attendee{
+		FavoriteWorkshops: newSet,
+	}
+	updateErr := u.attendeeRepo.Update(&updateStruct, userId)
+	if updateErr != nil {
+		if updateErr == gorm.ErrRecordNotFound {
+			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+				"error": "Attendee not found",
+			})
+		}
+
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Internal DB error",
+		})
+	}
+
+	return c.JSON(fiber.Map{
 		"ok": true,
 	})
 }
