@@ -1,8 +1,10 @@
 package usecase
 
 import (
+	"oph26-backend/internal/entity"
 	pieceModel "oph26-backend/internal/model/piece"
 	"oph26-backend/internal/repository"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
@@ -61,6 +63,26 @@ func (u *PieceUsecaseImpl) GetMyPiece(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
 			"error": "Pieces not found for the current user",
 		})
+	}
+
+	if time.Now().After(piece.ExpireDate) {
+		newCode, err := generatePieceCode()
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": "Cannot generate new piece code",
+			})
+		}
+		newPiece := &entity.MyPiece{
+			AttendeeID: piece.AttendeeID,
+			PieceCode:  newCode,
+			ExpireDate: time.Now().Add(24 * time.Hour),
+		}
+		if err := u.PieceRepo.CreateMyPiece(newPiece); err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": "Failed to create new piece",
+			})
+		}
+		piece = newPiece
 	}
 
 	return c.JSON(pieceModel.MyPieceResponse{

@@ -11,6 +11,7 @@ import (
 type PieceRepository interface {
 	FindAttendeeByUserID(userID uuid.UUID) (*entity.Attendee, error)
 	FindMyPieceByAttendeeID(attendeeID uuid.UUID) (*entity.MyPiece, error)
+	CreateMyPiece(piece *entity.MyPiece) error
 	FindCollectedPiecesByAttendeeID(attendeeID uuid.UUID) ([]entity.CollectedPiece, error)
 	CountCollectedByFaculty(attendeeID uuid.UUID) (map[string]int, error)
 	CountTop1ThresholdByFaculty() (map[string]int, error)
@@ -37,13 +38,17 @@ func (r *PieceRepositoryImpl) FindAttendeeByUserID(userID uuid.UUID) (*entity.At
 
 func (r *PieceRepositoryImpl) FindMyPieceByAttendeeID(attendeeID uuid.UUID) (*entity.MyPiece, error) {
 	var piece entity.MyPiece
-	if err := r.DB.Where("attendee_id = ?", attendeeID).First(&piece).Error; err != nil {
+	if err := r.DB.Where("attendee_id = ?", attendeeID).Order("created_at DESC").First(&piece).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil
 		}
 		return nil, err
 	}
 	return &piece, nil
+}
+
+func (r *PieceRepositoryImpl) CreateMyPiece(piece *entity.MyPiece) error {
+	return r.DB.Create(piece).Error
 }
 
 func (r *PieceRepositoryImpl) FindCollectedPiecesByAttendeeID(attendeeID uuid.UUID) ([]entity.CollectedPiece, error) {
