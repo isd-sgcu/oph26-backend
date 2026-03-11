@@ -38,7 +38,7 @@ func (u *LeaderboardUsecaseImpl) GetMyLeaderboard(c *fiber.Ctx) error {
 		})
 	}
 
-	leaderboard, err := u.leaderboardRepo.FindByUserID(userID)
+	leaderboard, err := u.leaderboardRepo.FindLeaderboardByUserID(userID)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": err.Error(),

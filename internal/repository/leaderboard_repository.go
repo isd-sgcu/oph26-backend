@@ -13,7 +13,7 @@ type LeaderboardRepositoryImpl struct {
 }
 
 type LeaderboardRepository interface {
-	FindByUserID(userID uuid.UUID) (*entity.Leaderboard, error)
+	FindLeaderboardByUserID(userID uuid.UUID) (*entity.Leaderboard, error)
 	UpdateIsTop() error
 }
 
@@ -21,7 +21,7 @@ func NewLeaderboardRepository(db *gorm.DB) LeaderboardRepository {
 	return &LeaderboardRepositoryImpl{DB: db}
 }
 
-func (r *LeaderboardRepositoryImpl) FindByUserID(userID uuid.UUID) (*entity.Leaderboard, error) {
+func (r *LeaderboardRepositoryImpl) FindLeaderboardByUserID(userID uuid.UUID) (*entity.Leaderboard, error) {
 	var leaderboard entity.Leaderboard
 	if err := r.DB.Where("user_id = ?", userID).First(&leaderboard).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
