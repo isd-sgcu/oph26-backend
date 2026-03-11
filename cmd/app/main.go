@@ -46,7 +46,7 @@ func main() {
 
 	// Init Middleware
 	authMiddleware := middleware.NewAuthMiddleware(cfg.JWTSecret)
-	rateLimitMiddleWare := middleware.RateLimitMiddleware(10, time.Minute) // 10 requests per minute
+	rateLimitMiddleware := middleware.RateLimitMiddleware(10, time.Minute) // 10 requests per minute
 
 	route.SetupRoutes(r, route.RouteConfig{
 		AuthUsecase:         authUsecase,
@@ -54,7 +54,7 @@ func main() {
 		AuthMiddleware:      authMiddleware,
 		UserUsecase:         userUsecase,
 		PieceUsecase:        pieceUsecase,
-		RateLimitMiddleware: rateLimitMiddleWare,
+		RateLimitMiddleware: rateLimitMiddleware,
 	})
 
 	log.Fatal(r.Listen(":8080"))
