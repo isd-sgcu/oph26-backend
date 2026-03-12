@@ -130,5 +130,23 @@ func (u *CheckinUsecaseImpl) CheckIn(c *fiber.Ctx) error {
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
 		"ok": true,
+		"attendee": attendeeModel.AttendeeResponse{
+			ID:                            attendee.ID,
+			UserID:                        attendee.UserID,
+			Firstname:                     attendee.Firstname,
+			Surname:                       attendee.Surname,
+			AttendeeType:                  attendee.AttendeeType,
+			Age:                           attendee.Age,
+			Province:                      attendee.Province,
+			StudyLevel:                    attendee.StudyLevel,
+			SchoolName:                    attendee.SchoolName,
+			NewsSourceSelected:            attendee.NewsSourceSelected,
+			NewsSourcesOther:              attendee.NewsSourcesOther,
+			InitialFirstInterestedFaculty: attendee.InitialFirstInterestedFaculty,
+			InterestedFaculty:             attendee.InterestedFaculty,
+			ObjectiveSelected:             attendee.ObjectiveSelected,
+			ObjectiveOther:                attendee.ObjectiveOther,
+			TicketCode:                    attendee.TicketCode,
+		},
 	})
 }
