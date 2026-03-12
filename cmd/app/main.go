@@ -45,6 +45,10 @@ func main() {
 	checkinRepo := repository.NewCheckinRepository(config.DB)
 	checkinUsecase := usecase.NewCheckinUsecase(attendeeRepo, staffRepo, checkinRepo)
 
+	leaderboardRepo := repository.NewLeaderboardRepository(config.DB)
+	scoreRepo := repository.NewScoreRepository(config.DB)
+	leaderboardUsecase := usecase.NewLeaderboardUsecase(leaderboardRepo, scoreRepo)
+
 	// Init Middleware
 	authMiddleware := middleware.NewAuthMiddleware(cfg.JWTSecret)
 	rateLimitMiddleware := middleware.RateLimitMiddleware(10, time.Minute) // 10 requests per minute
@@ -57,6 +61,8 @@ func main() {
 		UserUsecase:         userUsecase,
 		PieceUsecase:        pieceUsecase,
 		RateLimitMiddleware: rateLimitMiddleware,
+		LeaderboardUsecase: leaderboardUsecase,
+		RateLimitMiddleware: rateLimitMiddleWare,
 	})
 
 	log.Fatal(r.Listen(":8080"))
