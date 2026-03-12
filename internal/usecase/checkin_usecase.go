@@ -120,6 +120,14 @@ func (u *CheckinUsecaseImpl) CheckIn(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusConflict).JSON(conflictResponseBody)
 	}
 
+	// Actually create the check-in record since there's no existing record for this attendee and faculty
+	checkinErr := u.CheckinRepository.CreateCheckin(attendee.ID, staff.Faculty, staff.ID)
+	if checkinErr != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to create check-in",
+		})
+	}
+
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
 		"ok": true,
 	})
