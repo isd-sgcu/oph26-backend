@@ -87,8 +87,6 @@ func (u *AttendeeUsecaseImpl) GetMyAttendee(c *fiber.Ctx) error {
 		Age:                           attendee.Age,
 		AttendeeType:                  attendee.AttendeeType,
 		CertificateName:               attendee.CertificateName,
-		CheckedInAt:                   attendee.CheckedInAt,
-		CheckinStaffID:                attendee.CheckinStaffID,
 		CreatedAt:                     attendee.CreatedAt,
 		FavoriteWorkshops:             attendee.FavoriteWorkshops.ToSlice(),
 		Firstname:                     attendee.Firstname,
@@ -143,51 +141,27 @@ func (u *AttendeeUsecaseImpl) GetByAttendeeId(c *fiber.Ctx) error {
 		})
 	}
 
-	var checkinStaff *model.StaffResponse
-	if attendee.CheckinStaff != nil {
-		staff := attendee.CheckinStaff
-		checkinStaff = &model.StaffResponse{
-			ID:        staff.ID,
-			UserID:    staff.UserID,
-			Cuid:      staff.Cuid,
-			Firstname: staff.Firstname,
-			Surname:   staff.Surname,
-			Nickname:  staff.Nickname,
-			Phone:     staff.Phone,
-			Year:      staff.Year,
-			Email:     staff.Email,
-			Faculty:   staff.Faculty,
-			CreatedAt: staff.CreatedAt,
-			UpdatedAt: staff.UpdatedAt,
-		}
-	}
-
-	return c.JSON(&attendeeModel.AttendeeStaffResponse{
-		AttendeeResponse: attendeeModel.AttendeeResponse{
-			Age:                           attendee.Age,
-			AttendeeType:                  attendee.AttendeeType,
-			CertificateName:               attendee.CertificateName,
-			CheckedInAt:                   attendee.CheckedInAt,
-			CheckinStaffID:                attendee.CheckinStaffID,
-			CreatedAt:                     attendee.CreatedAt,
-			FavoriteWorkshops:             attendee.FavoriteWorkshops.ToSlice(),
-			Firstname:                     attendee.Firstname,
-			ID:                            attendee.ID,
-			InitialFirstInterestedFaculty: attendee.InitialFirstInterestedFaculty,
-			InterestedFaculty:             attendee.InterestedFaculty,
-			NewsSourcesOther:              attendee.NewsSourcesOther,
-			NewsSourceSelected:            attendee.NewsSourceSelected,
-			ObjectiveOther:                attendee.ObjectiveOther,
-			ObjectiveSelected:             attendee.ObjectiveSelected,
-			Province:                      attendee.Province,
-			SchoolName:                    attendee.SchoolName,
-			StudyLevel:                    attendee.StudyLevel,
-			Surname:                       attendee.Surname,
-			TicketCode:                    attendee.TicketCode,
-			UpdatedAt:                     attendee.UpdatedAt,
-			UserID:                        attendee.UserID,
-		},
-		CheckinStaff: checkinStaff,
+	return c.JSON(&attendeeModel.AttendeeResponse{
+		Age:                           attendee.Age,
+		AttendeeType:                  attendee.AttendeeType,
+		CertificateName:               attendee.CertificateName,
+		CreatedAt:                     attendee.CreatedAt,
+		FavoriteWorkshops:             attendee.FavoriteWorkshops.ToSlice(),
+		Firstname:                     attendee.Firstname,
+		ID:                            attendee.ID,
+		InitialFirstInterestedFaculty: attendee.InitialFirstInterestedFaculty,
+		InterestedFaculty:             attendee.InterestedFaculty,
+		NewsSourcesOther:              attendee.NewsSourcesOther,
+		NewsSourceSelected:            attendee.NewsSourceSelected,
+		ObjectiveOther:                attendee.ObjectiveOther,
+		ObjectiveSelected:             attendee.ObjectiveSelected,
+		Province:                      attendee.Province,
+		SchoolName:                    attendee.SchoolName,
+		StudyLevel:                    attendee.StudyLevel,
+		Surname:                       attendee.Surname,
+		TicketCode:                    attendee.TicketCode,
+		UpdatedAt:                     attendee.UpdatedAt,
+		UserID:                        attendee.UserID,
 	})
 }
 

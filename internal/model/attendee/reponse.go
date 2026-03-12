@@ -1,7 +1,6 @@
 package attendee
 
 import (
-	"oph26-backend/internal/model"
 	"time"
 
 	"github.com/google/uuid"
@@ -11,8 +10,6 @@ type AttendeeResponse struct {
 	Age                           int        `json:"age"`
 	AttendeeType                  string     `json:"attendee_type"`
 	CertificateName               *string    `json:"certificate_name"`
-	CheckedInAt                   *time.Time `json:"checked_in_at"`
-	CheckinStaffID                *uuid.UUID `json:"checkin_staff_id"`
 	CreatedAt                     time.Time  `json:"createdAt"`
 	FavoriteWorkshops             []string   `json:"favorite_workshops"`
 	Firstname                     string     `json:"firstname"`
@@ -30,11 +27,6 @@ type AttendeeResponse struct {
 	TicketCode                    string     `json:"ticket_code"`
 	UpdatedAt                     time.Time  `json:"updatedAt"`
 	UserID                        uuid.UUID  `json:"user_id"`
-}
-
-type AttendeeStaffResponse struct {
-	AttendeeResponse
-	CheckinStaff *model.StaffResponse `json:"checkin_staff"`
 }
 
 type GetFavoriteWorkshopResponse struct {
