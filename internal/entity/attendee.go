@@ -30,8 +30,6 @@ type Attendee struct {
 	MyPiece                       *MyPiece
 	CertificateName               *string    `gorm:"type:text"`
 	CheckinStaffID                *uuid.UUID `gorm:"type:uuid"`
-	CheckinStaff                  *Staff     `gorm:"foreignKey:CheckinStaffID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL"`
-	CheckedInAt                   *time.Time
 	FavoriteWorkshops             StringSet `gorm:"type:text[]"`
 	CreatedAt                     time.Time
 	UpdatedAt                     time.Time

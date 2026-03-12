@@ -37,12 +37,13 @@ func main() {
 	staffRepo := repository.NewStaffRepository(config.DB)
 	refreshTokenRepo := repository.NewRefreshTokenRepository(config.DB)
 	authUsecase := usecase.NewAuthUsecase(userRepo, staffRepo, refreshTokenRepo, cfg.GoogleClientID, cfg.JWTSecret, cfg.AppEnv)
-
 	pieceRepo := repository.NewPieceRepository(config.DB)
 	userUsecase := usecase.NewUserUsecase(userRepo)
 	attendeeRepo := repository.NewAttendeeRepository(config.DB)
 	attendeeUsecase := usecase.NewAttendeeUsecase(attendeeRepo, userRepo)
 	pieceUsecase := usecase.NewPieceUsecase(pieceRepo)
+	checkinRepo := repository.NewCheckinRepository(config.DB)
+	checkinUsecase := usecase.NewCheckinUsecase(attendeeRepo, staffRepo, checkinRepo)
 
 	leaderboardRepo := repository.NewLeaderboardRepository(config.DB)
 	scoreRepo := repository.NewScoreRepository(config.DB)
@@ -50,14 +51,16 @@ func main() {
 
 	// Init Middleware
 	authMiddleware := middleware.NewAuthMiddleware(cfg.JWTSecret)
-	rateLimitMiddleWare := middleware.RateLimitMiddleware(10, time.Minute) // 10 requests per minute
+	rateLimitMiddleware := middleware.RateLimitMiddleware(10, time.Minute) // 10 requests per minute
 
 	route.SetupRoutes(r, route.RouteConfig{
 		AuthUsecase:         authUsecase,
 		AttendeeUsecase:     attendeeUsecase,
+		CheckinUsecase:      checkinUsecase,
 		AuthMiddleware:      authMiddleware,
 		UserUsecase:         userUsecase,
 		PieceUsecase:        pieceUsecase,
+		RateLimitMiddleware: rateLimitMiddleware,
 		LeaderboardUsecase: leaderboardUsecase,
 		RateLimitMiddleware: rateLimitMiddleWare,
 	})

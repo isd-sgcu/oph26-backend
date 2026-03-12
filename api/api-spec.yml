@@ -169,13 +169,7 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: "#/components/schemas/Attendee"
-                  - properties:
-                      checkin_staff:
-                        $ref: "#/components/schemas/Staff"
-                        description: ข้อมูลสตาฟที่ทำการเช็คอินให้ผู้เข้าร่วมงาน (ถ้ามี)
-                    type: object
+                $ref: "#/components/schemas/Attendee"
           description: OK
         "401":
           $ref: "#/components/responses/UnauthorizedResponse"
@@ -463,10 +457,19 @@ paths:
               schema:
                 allOf:
                   - $ref: "#/components/schemas/ErrorResponse"
-                  - properties:
-                      attendee:
-                        $ref: "#/components/schemas/Attendee"
-                        description: ข้อมูลผู้เข้าร่วมงานที่พยายามเช็คอินซ้ำคณะ
+                  - type: object
+                    properties:
+                      checkin:
+                        allOf:
+                          - $ref: "#/components/schemas/Checkin"
+                          - type: object
+                            properties:
+                              attendee:
+                                $ref: "#/components/schemas/Attendee"
+                                description: ข้อมูลผู้เข้าร่วมงานที่พยายามเช็คอินซ้ำคณะ
+                              staff:
+                                $ref: "#/components/schemas/Staff"
+                                description: ข้อมูลสตาฟที่ทำการเช็คอินให้ผู้เข้าร่วมงานในครั้งแรก
         "500":
           $ref: "#/components/responses/InternalServerErrorResponse"
       tags:
@@ -859,7 +862,7 @@ components:
         - firstname
         - surname
         - attendee_type
-        - age
+        - date_of_birth
         - province
         - district
         - news_sources_selected
@@ -930,6 +933,7 @@ components:
         - surname
         - attendee_type
         - province
+        - date_of_birth
         - district
         - news_sources_selected
         - objective_selected
@@ -1097,9 +1101,34 @@ components:
           $ref: "#/components/schemas/TransportationMethodEnum"
           description: วิธีการเดินทางมางาน
       type: object
+    Checkin:
+      description: รายการเช็คอินของผู้เข้าร่วมงาน
+      properties:
+        id:
+          description: UUID ของรายการเช็คอิน
+          format: uuid
+          type: string
+        attendee_id:
+          $ref: "#/components/schemas/AttendeeID"
+          description: UUID ของผู้เข้าร่วมงานที่ถูกเช็คอิน
+        faculty:
+          $ref: "#/components/schemas/FacultyEnum"
+          description: คณะของสตาฟที่เป็นผู้เช็คอินให้
+        checked_in_at:
+          description: วันที่และเวลาที่ผู้เข้าร่วมงานถูกเช็คอินที่คณะ
+          format: date-time
+          type: string
+        staff_id:
+          $ref: "#/components/schemas/StaffID"
+          description: UUID ของสตาฟที่ทำการเช็คอินให้ผู้เข้าร่วมงาน
+      type: object
     DateOfBirth:
       description: วันเดือนปีเกิดของผู้เข้าร่วมงาน
       format: date
+      examples:
+        - 2005-12-31
+        - 1990-01-01
+        - 2000-06-15
       type: string
     District:
       description: อำเภอของผู้เข้าร่วมงาน
