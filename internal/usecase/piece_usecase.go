@@ -2,7 +2,6 @@ package usecase
 
 import (
 	"errors"
-	"oph26-backend/internal/entity"
 	pieceModel "oph26-backend/internal/model/piece"
 	"oph26-backend/internal/repository"
 	"time"
@@ -68,6 +67,13 @@ func (u *PieceUsecaseImpl) GetMyPiece(c *fiber.Ctx) error {
 	}
 
 	if time.Now().After(piece.ExpireDate) {
+		newCode, err := generatePieceCode()
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": "Cannot generate new piece code",
+			})
+		}
+		if err := u.PieceRepo.RefreshMyPiece(piece, newCode); err != nil {
 		const maxRetries = 5
 		var newPiece *entity.MyPiece
 		for range maxRetries {
@@ -96,10 +102,10 @@ func (u *PieceUsecaseImpl) GetMyPiece(c *fiber.Ctx) error {
 		}
 		if newPiece == nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": "Failed to refresh piece",
 				"error": "Failed to create new piece after retries",
 			})
 		}
-		piece = newPiece
 	}
 
 	return c.JSON(pieceModel.MyPieceResponse{

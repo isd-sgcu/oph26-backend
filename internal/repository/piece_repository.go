@@ -3,6 +3,7 @@ package repository
 import (
 	"errors"
 	"oph26-backend/internal/entity"
+	"time"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -11,7 +12,7 @@ import (
 type PieceRepository interface {
 	FindAttendeeByUserID(userID uuid.UUID) (*entity.Attendee, error)
 	FindMyPieceByAttendeeID(attendeeID uuid.UUID) (*entity.MyPiece, error)
-	CreateMyPiece(piece *entity.MyPiece) error
+	RefreshMyPiece(piece *entity.MyPiece, newCode string) error
 	FindCollectedPiecesByAttendeeID(attendeeID uuid.UUID) ([]entity.CollectedPiece, error)
 	CountCollectedByFaculty(attendeeID uuid.UUID) (map[string]int, error)
 	CountTop1ThresholdByFaculty() (map[string]int, error)
@@ -47,8 +48,18 @@ func (r *PieceRepositoryImpl) FindMyPieceByAttendeeID(attendeeID uuid.UUID) (*en
 	return &piece, nil
 }
 
-func (r *PieceRepositoryImpl) CreateMyPiece(piece *entity.MyPiece) error {
-	return r.DB.Create(piece).Error
+func (r *PieceRepositoryImpl) RefreshMyPiece(piece *entity.MyPiece, newCode string) error {
+	newExpireDate := time.Now().Add(24 * time.Hour)
+	if err := r.DB.Model(piece).Updates(map[string]interface{}{
+		"piece_code":  newCode,
+		"expire_date": newExpireDate,
+	}).Error; err != nil {
+		return err
+	}
+
+	piece.PieceCode = newCode
+	piece.ExpireDate = newExpireDate
+	return nil
 }
 
 func (r *PieceRepositoryImpl) FindCollectedPiecesByAttendeeID(attendeeID uuid.UUID) ([]entity.CollectedPiece, error) {
