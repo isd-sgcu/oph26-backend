@@ -30,6 +30,7 @@ type AttendeeResponse struct {
 	TicketCode                    string     `json:"ticket_code"`
 	UpdatedAt                     time.Time  `json:"updatedAt"`
 	UserID                        uuid.UUID  `json:"user_id"`
+	TransportationMethod          string     `json:"transportation_method"` // api docs said "ไม่ต้อง validation ก็ได้"
 }
 
 type AttendeeStaffResponse struct {

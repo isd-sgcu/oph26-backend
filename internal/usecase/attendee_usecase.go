@@ -186,6 +186,7 @@ func (u *AttendeeUsecaseImpl) GetByAttendeeId(c *fiber.Ctx) error {
 			TicketCode:                    attendee.TicketCode,
 			UpdatedAt:                     attendee.UpdatedAt,
 			UserID:                        attendee.UserID,
+			TransportationMethod:          attendee.TransportationMethod,
 		},
 		CheckinStaff: checkinStaff,
 	})
@@ -312,6 +313,7 @@ func (u *AttendeeUsecaseImpl) PostAttendee(c *fiber.Ctx) error {
 			ObjectiveSelected:             request.ObjectiveSelected,
 			ObjectiveOther:                request.ObjectiveOther,
 			TicketCode:                    ticketCode,
+			TransportationMethod:          request.TransportationMethod,
 		}
 
 		founded, err2 := u.attendeeRepo.Upsert(&attendee)
@@ -432,7 +434,8 @@ func (u *AttendeeUsecaseImpl) PutAttendee(c *fiber.Ctx) error {
 		reqBody.NewsSourcesOther == nil &&
 		reqBody.InterestedFaculty == nil &&
 		reqBody.ObjectiveSelected == nil &&
-		reqBody.ObjectiveOther == nil {
+		reqBody.ObjectiveOther == nil &&
+		reqBody.TransportationMethod == nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "No fields to update",
 		})
@@ -521,6 +524,9 @@ func (u *AttendeeUsecaseImpl) PutAttendee(c *fiber.Ctx) error {
 	}
 	if reqBody.ObjectiveOther != nil {
 		updateStruct.ObjectiveOther = reqBody.ObjectiveOther
+	}
+	if reqBody.TransportationMethod != nil {
+		updateStruct.TransportationMethod = *reqBody.TransportationMethod
 	}
 
 	updateErr := u.attendeeRepo.Update(&updateStruct, userId)

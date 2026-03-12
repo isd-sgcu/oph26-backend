@@ -33,6 +33,7 @@ type Attendee struct {
 	CheckinStaff                  *Staff     `gorm:"foreignKey:CheckinStaffID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL"`
 	CheckedInAt                   *time.Time
 	FavoriteWorkshops             StringSet `gorm:"type:text[]"`
+	TransportationMethod          string
 	CreatedAt                     time.Time
 	UpdatedAt                     time.Time
 }
