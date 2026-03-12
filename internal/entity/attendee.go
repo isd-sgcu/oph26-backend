@@ -16,14 +16,15 @@ type Attendee struct {
 	Firstname                     string         `gorm:"not null"`
 	Surname                       string         `gorm:"not null"`
 	AttendeeType                  string         `gorm:"type:text;not null;check:attendee_type IN ('elementaryschool','highschool','parent','educationstaff','other')"`
-	Age                           int            `gorm:"not null"`
+	DateOfBirth                   *time.Time     `gorm:"type:date"`
 	Province                      string         `gorm:"not null"`
+	District                      string         `gorm:"not null"`
 	StudyLevel                    *string        `gorm:"type:text"`
 	SchoolName                    *string        `gorm:"type:text"`
 	NewsSourceSelected            pq.StringArray `gorm:"type:text[]"`
 	NewsSourcesOther              *string        `gorm:"type:text"`
-	InitialFirstInterestedFaculty string         `gorm:"not null"`
-	InterestedFaculty             pq.StringArray `gorm:"type:text[];not null"`
+	InitialFirstInterestedFaculty *string        `gorm:"type:text"`
+	InterestedFaculty             pq.StringArray `gorm:"type:text[]"`
 	ObjectiveSelected             pq.StringArray `gorm:"type:text[]"`
 	ObjectiveOther                *string        `gorm:"type:text"`
 	TicketCode                    string         `gorm:"type:char(7);not null;uniqueIndex"`

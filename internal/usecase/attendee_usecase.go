@@ -17,6 +17,7 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
+	"github.com/lib/pq"
 	"gorm.io/gorm"
 )
 
@@ -41,6 +42,40 @@ func NewAttendeeUsecase(attendeeRepo repository.AttendeeRepository, userRepo rep
 		attendeeRepo: attendeeRepo,
 		validate:     validator.New(),
 	}
+}
+
+func parseDateOfBirth(dateStr *string) *time.Time {
+	if dateStr == nil {
+		return nil
+	}
+	t, err := time.Parse("2006-01-02", *dateStr)
+	if err != nil {
+		return nil
+	}
+	return &t
+}
+
+func formatDateOfBirth(t *time.Time) *string {
+	if t == nil {
+		return nil
+	}
+	formatted := t.Format("2006-01-02")
+	return &formatted
+}
+
+func getInterestedFacultySlice(faculty *pq.StringArray) pq.StringArray {
+	if faculty == nil {
+		return pq.StringArray{}
+	}
+	return *faculty
+}
+
+func getInitialFirstInterestedFaculty(faculty *pq.StringArray) *string {
+	if faculty == nil || len(*faculty) == 0 {
+		return nil
+	}
+	first := (*faculty)[0]
+	return &first
 }
 
 func (u *AttendeeUsecaseImpl) GetMyAttendee(c *fiber.Ctx) error {
@@ -84,7 +119,7 @@ func (u *AttendeeUsecaseImpl) GetMyAttendee(c *fiber.Ctx) error {
 	}
 
 	return c.JSON(&attendeeModel.AttendeeResponse{
-		Age:                           attendee.Age,
+		DateOfBirth:                   formatDateOfBirth(attendee.DateOfBirth),
 		AttendeeType:                  attendee.AttendeeType,
 		CertificateName:               attendee.CertificateName,
 		CheckedInAt:                   attendee.CheckedInAt,
@@ -100,6 +135,7 @@ func (u *AttendeeUsecaseImpl) GetMyAttendee(c *fiber.Ctx) error {
 		ObjectiveOther:                attendee.ObjectiveOther,
 		ObjectiveSelected:             attendee.ObjectiveSelected,
 		Province:                      attendee.Province,
+		District:                      attendee.District,
 		SchoolName:                    attendee.SchoolName,
 		StudyLevel:                    attendee.StudyLevel,
 		Surname:                       attendee.Surname,
@@ -164,7 +200,7 @@ func (u *AttendeeUsecaseImpl) GetByAttendeeId(c *fiber.Ctx) error {
 
 	return c.JSON(&attendeeModel.AttendeeStaffResponse{
 		AttendeeResponse: attendeeModel.AttendeeResponse{
-			Age:                           attendee.Age,
+			DateOfBirth:                   formatDateOfBirth(attendee.DateOfBirth),
 			AttendeeType:                  attendee.AttendeeType,
 			CertificateName:               attendee.CertificateName,
 			CheckedInAt:                   attendee.CheckedInAt,
@@ -180,6 +216,7 @@ func (u *AttendeeUsecaseImpl) GetByAttendeeId(c *fiber.Ctx) error {
 			ObjectiveOther:                attendee.ObjectiveOther,
 			ObjectiveSelected:             attendee.ObjectiveSelected,
 			Province:                      attendee.Province,
+			District:                      attendee.District,
 			SchoolName:                    attendee.SchoolName,
 			StudyLevel:                    attendee.StudyLevel,
 			Surname:                       attendee.Surname,
@@ -261,14 +298,16 @@ func (u *AttendeeUsecaseImpl) PostAttendee(c *fiber.Ctx) error {
 	}
 
 	// validate options array
-	arr := []string(request.InterestedFaculty)
-	if !model.FacultiesAreValid(arr) {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid request body; unknown faculty",
-		})
+	if request.InterestedFaculty != nil {
+		arr := []string(*request.InterestedFaculty)
+		if !model.FacultiesAreValid(arr) {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+				"error": "Invalid request body; unknown faculty",
+			})
+		}
 	}
 
-	arr = []string(request.ObjectiveSelected)
+	arr := []string(request.ObjectiveSelected)
 	if !model.ObjectivesAreValid(arr) {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "Invalid request body; unknown objective",
@@ -302,14 +341,15 @@ func (u *AttendeeUsecaseImpl) PostAttendee(c *fiber.Ctx) error {
 			Firstname:                     request.Firstname,
 			Surname:                       request.Surname,
 			AttendeeType:                  request.AttendeeType,
-			Age:                           request.Age,
+			DateOfBirth:                   parseDateOfBirth(request.DateOfBirth),
 			Province:                      request.Province,
+			District:                      request.District,
 			StudyLevel:                    request.StudyLevel,
 			SchoolName:                    request.SchoolName,
 			NewsSourceSelected:            request.NewsSourceSelected,
 			NewsSourcesOther:              request.NewsSourcesOther,
-			InterestedFaculty:             request.InterestedFaculty,
-			InitialFirstInterestedFaculty: request.InterestedFaculty[0],
+			InterestedFaculty:             getInterestedFacultySlice(request.InterestedFaculty),
+			InitialFirstInterestedFaculty: getInitialFirstInterestedFaculty(request.InterestedFaculty),
 			ObjectiveSelected:             request.ObjectiveSelected,
 			ObjectiveOther:                request.ObjectiveOther,
 			TicketCode:                    ticketCode,
@@ -424,8 +464,9 @@ func (u *AttendeeUsecaseImpl) PutAttendee(c *fiber.Ctx) error {
 	// No update to do if body is empty
 	if reqBody.Firstname == nil &&
 		reqBody.Surname == nil &&
-		reqBody.Age == nil &&
+		reqBody.DateOfBirth == nil &&
 		reqBody.Province == nil &&
+		reqBody.District == nil &&
 		reqBody.StudyLevel == nil &&
 		reqBody.SchoolName == nil &&
 		reqBody.NewsSourceSelected == nil &&
@@ -496,11 +537,14 @@ func (u *AttendeeUsecaseImpl) PutAttendee(c *fiber.Ctx) error {
 	if reqBody.Surname != nil {
 		updateStruct.Surname = *reqBody.Surname
 	}
-	if reqBody.Age != nil {
-		updateStruct.Age = *reqBody.Age
+	if reqBody.DateOfBirth != nil {
+		updateStruct.DateOfBirth = parseDateOfBirth(reqBody.DateOfBirth)
 	}
 	if reqBody.Province != nil {
 		updateStruct.Province = *reqBody.Province
+	}
+	if reqBody.District != nil {
+		updateStruct.District = *reqBody.District
 	}
 	if reqBody.StudyLevel != nil {
 		updateStruct.StudyLevel = reqBody.StudyLevel
