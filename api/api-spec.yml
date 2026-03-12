@@ -862,7 +862,7 @@ components:
         - firstname
         - surname
         - attendee_type
-        - age
+        - date_of_birth
         - province
         - district
         - news_sources_selected
@@ -933,6 +933,7 @@ components:
         - surname
         - attendee_type
         - province
+        - date_of_birth
         - district
         - news_sources_selected
         - objective_selected
@@ -1124,6 +1125,10 @@ components:
     DateOfBirth:
       description: วันเดือนปีเกิดของผู้เข้าร่วมงาน
       format: date
+      examples:
+        - 2005-12-31
+        - 1990-01-01
+        - 2000-06-15
       type: string
     District:
       description: อำเภอของผู้เข้าร่วมงาน
