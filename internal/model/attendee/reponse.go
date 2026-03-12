@@ -8,7 +8,7 @@ import (
 )
 
 type AttendeeResponse struct {
-	DateOfBirth                   *string    `json:"date_of_birth"` // format: "2026-03-12"
+	DateOfBirth                   string     `json:"date_of_birth"` // format: "2026-03-12"
 	AttendeeType                  string     `json:"attendee_type"`
 	CertificateName               *string    `json:"certificate_name"`
 	CheckedInAt                   *time.Time `json:"checked_in_at"`
@@ -17,7 +17,7 @@ type AttendeeResponse struct {
 	FavoriteWorkshops             []string   `json:"favorite_workshops"`
 	Firstname                     string     `json:"firstname"`
 	ID                            uuid.UUID  `json:"id"`
-	InitialFirstInterestedFaculty *string    `json:"initial_first_interested_faculty"`
+	InitialFirstInterestedFaculty string     `json:"initial_first_interested_faculty"`
 	InterestedFaculty             []string   `json:"interested_faculty"`
 	NewsSourcesOther              *string    `json:"news_sources_other"`
 	NewsSourceSelected            []string   `json:"news_sources_selected"`

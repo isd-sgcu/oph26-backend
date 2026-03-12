@@ -17,7 +17,6 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
-	"github.com/lib/pq"
 	"gorm.io/gorm"
 )
 
@@ -44,38 +43,33 @@ func NewAttendeeUsecase(attendeeRepo repository.AttendeeRepository, userRepo rep
 	}
 }
 
-func parseDateOfBirth(dateStr *string) *time.Time {
-	if dateStr == nil {
-		return nil
+func parseDateOfBirth(dateStr *string) time.Time {
+	if dateStr == nil || *dateStr == "" {
+		return time.Time{}
 	}
 	t, err := time.Parse("2006-01-02", *dateStr)
 	if err != nil {
-		return nil
+		return time.Time{}
 	}
-	return &t
+	return t
 }
 
-func formatDateOfBirth(t *time.Time) *string {
-	if t == nil {
-		return nil
+func parseDateOfBirthString(dateStr string) time.Time {
+	if dateStr == "" {
+		return time.Time{}
 	}
-	formatted := t.Format("2006-01-02")
-	return &formatted
+	t, err := time.Parse("2006-01-02", dateStr)
+	if err != nil {
+		return time.Time{}
+	}
+	return t
 }
 
-func getInterestedFacultySlice(faculty *pq.StringArray) pq.StringArray {
-	if faculty == nil {
-		return pq.StringArray{}
+func formatDateOfBirth(t time.Time) string {
+	if t.IsZero() {
+		return ""
 	}
-	return *faculty
-}
-
-func getInitialFirstInterestedFaculty(faculty *pq.StringArray) *string {
-	if faculty == nil || len(*faculty) == 0 {
-		return nil
-	}
-	first := (*faculty)[0]
-	return &first
+	return t.Format("2006-01-02")
 }
 
 func (u *AttendeeUsecaseImpl) GetMyAttendee(c *fiber.Ctx) error {
@@ -298,16 +292,14 @@ func (u *AttendeeUsecaseImpl) PostAttendee(c *fiber.Ctx) error {
 	}
 
 	// validate options array
-	if request.InterestedFaculty != nil {
-		arr := []string(*request.InterestedFaculty)
-		if !model.FacultiesAreValid(arr) {
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-				"error": "Invalid request body; unknown faculty",
-			})
-		}
+	arr := []string(request.InterestedFaculty)
+	if !model.FacultiesAreValid(arr) {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid request body; unknown faculty",
+		})
 	}
 
-	arr := []string(request.ObjectiveSelected)
+	arr = []string(request.ObjectiveSelected)
 	if !model.ObjectivesAreValid(arr) {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "Invalid request body; unknown objective",
@@ -341,15 +333,15 @@ func (u *AttendeeUsecaseImpl) PostAttendee(c *fiber.Ctx) error {
 			Firstname:                     request.Firstname,
 			Surname:                       request.Surname,
 			AttendeeType:                  request.AttendeeType,
-			DateOfBirth:                   parseDateOfBirth(request.DateOfBirth),
+			DateOfBirth:                   parseDateOfBirthString(request.DateOfBirth),
 			Province:                      request.Province,
 			District:                      request.District,
 			StudyLevel:                    request.StudyLevel,
 			SchoolName:                    request.SchoolName,
 			NewsSourceSelected:            request.NewsSourceSelected,
 			NewsSourcesOther:              request.NewsSourcesOther,
-			InterestedFaculty:             getInterestedFacultySlice(request.InterestedFaculty),
-			InitialFirstInterestedFaculty: getInitialFirstInterestedFaculty(request.InterestedFaculty),
+			InterestedFaculty:             request.InterestedFaculty,
+			InitialFirstInterestedFaculty: request.InterestedFaculty[0],
 			ObjectiveSelected:             request.ObjectiveSelected,
 			ObjectiveOther:                request.ObjectiveOther,
 			TicketCode:                    ticketCode,

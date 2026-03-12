@@ -3,10 +3,10 @@ package attendee
 import "github.com/lib/pq"
 
 type AttendeeCreateRequest struct {
-	DateOfBirth          *string         `json:"date_of_birth" validate:"omitempty"`
-	AttendeeType         string          `json:"attendee_type" validate:"oneof=student parent educationstaff other"`
-	Firstname            string          `json:"firstname" validate:"max=200"`
-	InterestedFaculty    *pq.StringArray `json:"interested_faculty" validate:"omitempty,min=1,max=4,unique"`
+	DateOfBirth          string         `json:"date_of_birth" validate:"omitempty"`
+	AttendeeType         string         `json:"attendee_type" validate:"oneof=student parent educationstaff other"`
+	Firstname            string         `json:"firstname" validate:"max=200"`
+	InterestedFaculty    pq.StringArray `json:"interested_faculty" validate:"omitempty,min=1,max=4,unique"`
 	NewsSourcesOther     *string        `json:"news_sources_other" validate:"omitempty,max=200"`
 	NewsSourceSelected   pq.StringArray `json:"news_sources_selected" validate:"min=1"`
 	ObjectiveOther       *string        `json:"objective_other" validate:"omitempty,max=200"`
