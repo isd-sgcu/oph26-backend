@@ -37,12 +37,13 @@ func main() {
 	staffRepo := repository.NewStaffRepository(config.DB)
 	refreshTokenRepo := repository.NewRefreshTokenRepository(config.DB)
 	authUsecase := usecase.NewAuthUsecase(userRepo, staffRepo, refreshTokenRepo, cfg.GoogleClientID, cfg.JWTSecret, cfg.AppEnv)
-
 	pieceRepo := repository.NewPieceRepository(config.DB)
 	userUsecase := usecase.NewUserUsecase(userRepo)
 	attendeeRepo := repository.NewAttendeeRepository(config.DB)
 	attendeeUsecase := usecase.NewAttendeeUsecase(attendeeRepo, userRepo)
 	pieceUsecase := usecase.NewPieceUsecase(pieceRepo)
+	checkinRepo := repository.NewCheckinRepository(config.DB)
+	checkinUsecase := usecase.NewCheckinUsecase(attendeeRepo, staffRepo, checkinRepo)
 
 	// Init Middleware
 	authMiddleware := middleware.NewAuthMiddleware(cfg.JWTSecret)
@@ -51,6 +52,7 @@ func main() {
 	route.SetupRoutes(r, route.RouteConfig{
 		AuthUsecase:         authUsecase,
 		AttendeeUsecase:     attendeeUsecase,
+		CheckinUsecase:      checkinUsecase,
 		AuthMiddleware:      authMiddleware,
 		UserUsecase:         userUsecase,
 		PieceUsecase:        pieceUsecase,
