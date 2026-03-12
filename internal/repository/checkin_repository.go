@@ -10,6 +10,7 @@ import (
 
 type CheckinRepository interface {
 	FindCheckinByAttendeeAndFaculty(attendeeID uuid.UUID, faculty string) ([]entity.Checkin, error)
+	CreateCheckin(attendeeId uuid.UUID, faculty string, staffId uuid.UUID) error
 }
 
 type CheckinRepositoryImpl struct {
