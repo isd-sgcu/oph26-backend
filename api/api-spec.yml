@@ -169,13 +169,7 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: "#/components/schemas/Attendee"
-                  - properties:
-                      checkin_staff:
-                        $ref: "#/components/schemas/Staff"
-                        description: ข้อมูลสตาฟที่ทำการเช็คอินให้ผู้เข้าร่วมงาน (ถ้ามี)
-                    type: object
+                $ref: "#/components/schemas/Attendee"
           description: OK
         "401":
           $ref: "#/components/responses/UnauthorizedResponse"
