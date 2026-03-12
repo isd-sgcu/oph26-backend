@@ -7,6 +7,7 @@ export function randomEmail(): string {
   return `test-${prefix}-${++emailCounter}@example.com`;
 }
 
+// i cant do Bun.$`go run ....` for some reason, sooooooo
 export function generateMockToken(email: string): string {
   const header = btoa(JSON.stringify({ alg: "HS256", typ: "JWT" })).replace(
     /=+$/,
