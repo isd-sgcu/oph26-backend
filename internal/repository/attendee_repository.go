@@ -15,6 +15,7 @@ type AttendeeRepository interface {
 	Upsert(attendee *entity.Attendee) (bool, error)
 	CountByAttendeeType(attendeeType string) (int64, error)
 	CreateMyPieceAndLink(attendee *entity.Attendee, myPiece *entity.MyPiece) error
+	GetFavWorkshop(userID uuid.UUID) (*entity.StringSet, error)
 }
 
 type AttendeeRepositoryImpl struct {
@@ -82,4 +83,18 @@ func (r *AttendeeRepositoryImpl) Update(attendee *entity.Attendee, userId uuid.U
 	}
 
 	return nil
+}
+
+func (r *AttendeeRepositoryImpl) GetFavWorkshop(userID uuid.UUID) (*entity.StringSet, error) {
+	var set entity.StringSet
+	res := r.DB.Model(&entity.Attendee{}).
+		Select("favorite_workshops").
+		Where(&entity.Attendee{UserID: userID}).
+		Scan(&set)
+
+	if res.Error != nil {
+		return nil, res.Error
+	}
+
+	return &set, nil
 }

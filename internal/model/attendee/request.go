@@ -35,3 +35,8 @@ type UpdateCertificateNameRequest struct {
 	Name    string `json:"name" validate:"required,max=200"`
 	Surname string `json:"surname" validate:"required,max=200"`
 }
+
+type PutFavoriteWorkshopsRequest struct {
+	Code  string `json:"code"`
+	State bool   `json:"state"`
+}
