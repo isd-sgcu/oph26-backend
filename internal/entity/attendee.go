@@ -15,7 +15,7 @@ type Attendee struct {
 	User                          User           `gorm:"foreignKey:UserID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
 	Firstname                     string         `gorm:"not null"`
 	Surname                       string         `gorm:"not null"`
-	AttendeeType                  string         `gorm:"type:text;not null;check:attendee_type IN ('elementaryschool','highschool','parent','educationstaff','other')"`
+	AttendeeType                  string         `gorm:"type:text;not null;check:attendee_type IN ('student','parent','educationstaff','other')"`
 	DateOfBirth                   time.Time      `gorm:"type:date;not null"`
 	Province                      string         `gorm:"not null"`
 	District                      string         `gorm:"not null"`
