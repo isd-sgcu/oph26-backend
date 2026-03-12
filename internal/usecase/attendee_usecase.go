@@ -371,10 +371,8 @@ func generatePieceCode() (string, error) {
 func (u *AttendeeUsecaseImpl) generateTicketCode(attendeeType string) (string, error) {
 	ticketCodePrefix := "A"
 	switch attendeeType {
-	case "elementaryschool":
+	case "student":
 		ticketCodePrefix = "S"
-	case "highschool":
-		ticketCodePrefix = "H"
 	case "parent":
 		ticketCodePrefix = "P"
 	case "educationstaff":

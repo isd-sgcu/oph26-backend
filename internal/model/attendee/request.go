@@ -4,7 +4,7 @@ import "github.com/lib/pq"
 
 type AttendeeCreateRequest struct {
 	Age                  int            `json:"age" validate:"min=5,max=100"`
-	AttendeeType         string         `json:"attendee_type" validate:"oneof=elementaryschool highschool parent educationstaff other"`
+	AttendeeType         string         `json:"attendee_type" validate:"oneof=student parent educationstaff other"`
 	Firstname            string         `json:"firstname" validate:"max=200"`
 	InterestedFaculty    pq.StringArray `json:"interested_faculty" validate:"min=1,max=4,unique"`
 	NewsSourcesOther     *string        `json:"news_sources_other" validate:"omitempty,max=200"`
