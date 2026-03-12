@@ -224,20 +224,12 @@ func (u *AttendeeUsecaseImpl) GetByAttendeeId(c *fiber.Ctx) error {
 }
 
 func (u *AttendeeUsecaseImpl) PostAttendee(c *fiber.Ctx) error {
-	userIdRaw, ok := c.Locals("user_id").(string)
+	userId, ok := c.Locals("user_id").(uuid.UUID)
 	if !ok {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "Invalid user_id",
 		})
 	}
-
-	userId, err := uuid.Parse(userIdRaw)
-	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid user_id",
-		})
-	}
-
 	// staff only
 	role := c.Locals("role").(string)
 	if role == "staff" {
@@ -256,6 +248,7 @@ func (u *AttendeeUsecaseImpl) PostAttendee(c *fiber.Ctx) error {
 	// Validation
 	validate := validator.New()
 	if err := validate.Struct(request); err != nil {
+		fmt.Println(err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "Fail to validate JSON",
 		})
@@ -292,15 +285,13 @@ func (u *AttendeeUsecaseImpl) PostAttendee(c *fiber.Ctx) error {
 	}
 
 	// validate options array
-	arr := []string(request.InterestedFaculty)
-	if !model.FacultiesAreValid(arr) {
+	if !model.FacultiesAreValid(request.InterestedFaculty) {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "Invalid request body; unknown faculty",
 		})
 	}
 
-	arr = []string(request.ObjectiveSelected)
-	if !model.ObjectivesAreValid(arr) {
+	if !model.ObjectivesAreValid(request.ObjectiveSelected) {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "Invalid request body; unknown objective",
 		})
@@ -348,7 +339,7 @@ func (u *AttendeeUsecaseImpl) PostAttendee(c *fiber.Ctx) error {
 			TransportationMethod:          request.TransportationMethod,
 		}
 
-		founded, err2 := u.attendeeRepo.Upsert(&attendee)
+		found, err2 := u.attendeeRepo.Upsert(&attendee)
 		// TODO: this might need `TranslateError: true`
 		if errors.Is(err2, gorm.ErrDuplicatedKey) {
 			continue
@@ -358,7 +349,7 @@ func (u *AttendeeUsecaseImpl) PostAttendee(c *fiber.Ctx) error {
 				"error": "Internal DB error",
 			})
 		}
-		if founded {
+		if found {
 			return c.Status(fiber.StatusConflict).JSON(fiber.Map{
 				"error": "Attendee already exists",
 			})
@@ -377,10 +368,13 @@ func (u *AttendeeUsecaseImpl) PostAttendee(c *fiber.Ctx) error {
 			}
 		}
 
+		return c.Status(fiber.StatusOK).JSON(fiber.Map{
+			"ok": true,
+		})
 	}
 
-	return c.Status(fiber.StatusOK).JSON(fiber.Map{
-		"ok": true,
+	return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+		"error": "Failed to generate unique ticket code",
 	})
 }
 
@@ -474,8 +468,7 @@ func (u *AttendeeUsecaseImpl) PutAttendee(c *fiber.Ctx) error {
 
 	// Validate enum fields
 	if reqBody.InterestedFaculty != nil {
-		arr := []string(*reqBody.InterestedFaculty)
-		if !model.FacultiesAreValid(arr) {
+		if !model.FacultiesAreValid(*reqBody.InterestedFaculty) {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 				"error": "Invalid request body; unknown faculty",
 			})
@@ -487,28 +480,26 @@ func (u *AttendeeUsecaseImpl) PutAttendee(c *fiber.Ctx) error {
 		})
 	}
 	if reqBody.NewsSourceSelected != nil {
-		arr := []string(*reqBody.NewsSourceSelected)
-		if !model.NewsSourcesAreValid(arr) {
+		if !model.NewsSourcesAreValid(*reqBody.NewsSourceSelected) {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 				"error": "Invalid request body; unknown news source",
 			})
 		}
 		// If NewsSourceSelected has "อื่น ๆ", NewsSourcesOther must have value
-		if slices.Contains(arr, string(model.OtherNewsSource)) && reqBody.NewsSourcesOther == nil {
+		if slices.Contains(*reqBody.NewsSourceSelected, string(model.OtherNewsSource)) && reqBody.NewsSourcesOther == nil {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 				"error": "Invalid request body; news_sources_selected is 'อื่น ๆ', but news_sources_other is not provided",
 			})
 		}
 	}
 	if reqBody.ObjectiveSelected != nil {
-		arr := []string(*reqBody.ObjectiveSelected)
-		if !model.ObjectivesAreValid(arr) {
+		if !model.ObjectivesAreValid(*reqBody.ObjectiveSelected) {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 				"error": "Invalid request body; unknown objective",
 			})
 		}
 		// If ObjectiveSelected has "อื่น ๆ", ObjectiveOther must have value
-		if slices.Contains(arr, string(model.OtherObjective)) && reqBody.ObjectiveOther == nil {
+		if slices.Contains(*reqBody.ObjectiveSelected, string(model.OtherObjective)) && reqBody.ObjectiveOther == nil {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 				"error": "Invalid request body; objective_selected is 'อื่น ๆ', but objective_other is not provided",
 			})
