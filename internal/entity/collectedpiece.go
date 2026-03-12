@@ -7,11 +7,9 @@ import (
 )
 
 type CollectedPiece struct {
-	AttendeeID  uuid.UUID `gorm:"type:uuid;primaryKey;not null"`
+	UserID      uuid.UUID `gorm:"type:uuid;primaryKey;not null"`
 	PieceID     uuid.UUID `gorm:"type:uuid;primaryKey;not null"`
-	Attendee    Attendee  `gorm:"foreignKey:AttendeeID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
+	User        User      `gorm:"foreignKey:UserID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
 	MyPiece     MyPiece   `gorm:"foreignKey:PieceID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
 	CollectedAt time.Time `gorm:"not null"`
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
 }

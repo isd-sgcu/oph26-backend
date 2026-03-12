@@ -38,15 +38,16 @@ func main() {
 	refreshTokenRepo := repository.NewRefreshTokenRepository(config.DB)
 	authUsecase := usecase.NewAuthUsecase(userRepo, staffRepo, refreshTokenRepo, cfg.GoogleClientID, cfg.JWTSecret, cfg.AppEnv)
 
-	pieceRepo := repository.NewPieceRepository(config.DB)
 	userUsecase := usecase.NewUserUsecase(userRepo)
 	attendeeRepo := repository.NewAttendeeRepository(config.DB)
 	attendeeUsecase := usecase.NewAttendeeUsecase(attendeeRepo, userRepo)
-	pieceUsecase := usecase.NewPieceUsecase(pieceRepo)
 
 	leaderboardRepo := repository.NewLeaderboardRepository(config.DB)
 	scoreRepo := repository.NewScoreRepository(config.DB)
 	leaderboardUsecase := usecase.NewLeaderboardUsecase(leaderboardRepo, scoreRepo)
+
+	pieceRepo := repository.NewPieceRepository(config.DB)
+	pieceUsecase := usecase.NewPieceUsecase(pieceRepo, leaderboardUsecase)
 
 	// Init Middleware
 	authMiddleware := middleware.NewAuthMiddleware(cfg.JWTSecret)
@@ -58,7 +59,7 @@ func main() {
 		AuthMiddleware:      authMiddleware,
 		UserUsecase:         userUsecase,
 		PieceUsecase:        pieceUsecase,
-		LeaderboardUsecase: leaderboardUsecase,
+		LeaderboardUsecase:  leaderboardUsecase,
 		RateLimitMiddleware: rateLimitMiddleWare,
 	})
 

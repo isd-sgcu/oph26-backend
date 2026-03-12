@@ -35,3 +35,12 @@ type CollectedPiecesResponse struct {
 	CollectedPieces []FriendPieceResponse `json:"collected_pieces"`
 	Stats           CollectedPiecesStats  `json:"stats"`
 }
+
+type CollectPieceRequest struct {
+	PieceCode string `json:"piece_code" validate:"required"`
+}
+
+type CollectPieceResponse struct {
+	Ok             bool                `json:"ok"`
+	CollectedPiece FriendPieceResponse `json:"collected_piece"`
+}

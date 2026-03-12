@@ -54,6 +54,7 @@ func SetupRoutes(r *fiber.App, c RouteConfig) {
 		{
 			pieces.Get("/me", c.PieceUsecase.GetMyPiece)
 			pieces.Get("/me/collected", c.PieceUsecase.GetCollectedPieces)
+			pieces.Post("/me/collected", c.PieceUsecase.CollectPiece)
 		}
 
 		leaderboards := api.Group("/leaderboards", c.AuthMiddleware)
