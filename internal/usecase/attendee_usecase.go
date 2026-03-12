@@ -285,7 +285,12 @@ func (u *AttendeeUsecaseImpl) PostAttendee(c *fiber.Ctx) error {
 	}
 
 	// validate options array
-	if !model.FacultiesAreValid(request.InterestedFaculty) {
+	if request.AttendeeType == "student" && request.InterestedFaculty == nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid request body; interested_faculty is required for student",
+		})
+	}
+	if request.InterestedFaculty != nil && !model.FacultiesAreValid(*request.InterestedFaculty) {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "Invalid request body; unknown faculty",
 		})
@@ -320,23 +325,26 @@ func (u *AttendeeUsecaseImpl) PostAttendee(c *fiber.Ctx) error {
 		}
 
 		attendee := entity.Attendee{
-			UserID:                        userId,
-			Firstname:                     request.Firstname,
-			Surname:                       request.Surname,
-			AttendeeType:                  request.AttendeeType,
-			DateOfBirth:                   parseDateOfBirthString(request.DateOfBirth),
-			Province:                      request.Province,
-			District:                      request.District,
-			StudyLevel:                    request.StudyLevel,
-			SchoolName:                    request.SchoolName,
-			NewsSourceSelected:            request.NewsSourceSelected,
-			NewsSourcesOther:              request.NewsSourcesOther,
-			InterestedFaculty:             request.InterestedFaculty,
-			InitialFirstInterestedFaculty: request.InterestedFaculty[0],
-			ObjectiveSelected:             request.ObjectiveSelected,
-			ObjectiveOther:                request.ObjectiveOther,
-			TicketCode:                    ticketCode,
-			TransportationMethod:          request.TransportationMethod,
+			UserID:               userId,
+			Firstname:            request.Firstname,
+			Surname:              request.Surname,
+			AttendeeType:         request.AttendeeType,
+			DateOfBirth:          parseDateOfBirthString(request.DateOfBirth),
+			Province:             request.Province,
+			District:             request.District,
+			StudyLevel:           request.StudyLevel,
+			SchoolName:           request.SchoolName,
+			NewsSourceSelected:   request.NewsSourceSelected,
+			NewsSourcesOther:     request.NewsSourcesOther,
+			ObjectiveSelected:    request.ObjectiveSelected,
+			ObjectiveOther:       request.ObjectiveOther,
+			TicketCode:           ticketCode,
+			TransportationMethod: request.TransportationMethod,
+		}
+		if request.InterestedFaculty != nil {
+			attendee.InterestedFaculty = *request.InterestedFaculty
+			first := (*request.InterestedFaculty)[0]
+			attendee.InitialFirstInterestedFaculty = &first
 		}
 
 		found, err2 := u.attendeeRepo.Upsert(&attendee)

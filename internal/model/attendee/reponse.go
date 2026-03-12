@@ -17,7 +17,7 @@ type AttendeeResponse struct {
 	FavoriteWorkshops             []string   `json:"favorite_workshops"`
 	Firstname                     string     `json:"firstname"`
 	ID                            uuid.UUID  `json:"id"`
-	InitialFirstInterestedFaculty string     `json:"initial_first_interested_faculty"`
+	InitialFirstInterestedFaculty *string    `json:"initial_first_interested_faculty"`
 	InterestedFaculty             []string   `json:"interested_faculty"`
 	NewsSourcesOther              *string    `json:"news_sources_other"`
 	NewsSourceSelected            []string   `json:"news_sources_selected"`
