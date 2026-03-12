@@ -154,6 +154,66 @@ paths:
       summary: อัปเดตข้อมูลผู้เข้าร่วมงาน
       tags:
         - Attendees
+  /attendees/me/certificate_name:
+    put:
+      description: >-
+        อัปเดตชื่อสำหรับพิมพ์ในใบเกียรติบัตรของผู้เข้าร่วมงาน
+        (เฉพาะผู้ใช้ที่ไม่ใช่สตาฟเท่านั้น)
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateCertificateNameRequest"
+      responses:
+        "200":
+          content:
+            application/json:
+              example:
+                ok: true
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+          description: Updated
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: Bad Request, invalid input data
+        "401":
+          $ref: "#/components/responses/UnauthorizedResponse"
+        "403":
+          content:
+            application/json:
+              examples:
+                StaffAccountForbiddenExample:
+                  description: >-
+                    ตัวอย่างการตอบกลับเมื่อสตาฟพยายามอัปเดตชื่อในใบเกียรติบัตรของตัวเอง
+                  summary: Staff Account Forbidden Example
+                  value:
+                    error: Forbidden, staff accounts cannot update certificate name
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: >-
+            Forbidden, user does not have permission to update certificate name
+            (might be a staff account)
+        "404":
+          content:
+            application/json:
+              examples:
+                AttendeeNotCreatedYet:
+                  description: >-
+                    ตัวอย่างการตอบกลับเมื่อผู้ใช้ที่ล็อกอินยังไม่มีข้อมูลผู้เข้าร่วมงาน
+                  summary: Attendee Not Created Yet Example
+                  value:
+                    error: Attendee data not found for the current user
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: Not Found, attendee data for the current user does not exist
+      summary: อัปเดตชื่อสำหรับพิมพ์ในใบเกียรติบัตร
+      security:
+        - bearerAuth: []
+      tags:
+        - Attendees
   /attendees/{attendeeId}:
     get:
       description: ดึงข้อมูลผู้เข้าร่วมงานตาม ID เฉพาะสตาฟ
@@ -1565,6 +1625,18 @@ components:
         - เดิน
         - รถจักรยานยนต์
         - รถยนต์ส่วนตัว
+    UpdateCertificateNameRequest:
+      description: อัปเดตชื่อสำหรับพิมพ์ในใบเกียรติบัตรของผู้เข้าร่วมงาน
+      properties:
+        fullname:
+          description: ชื่อสำหรับพิมพ์ในใบเกียรติบัตร มีหรือไม่มีคำนำหน้าแล้วแต่ผู้ใช้จะกรอก
+          type: string
+          examples:
+            - นายสมชาย ใจดี
+            - Miss Ada Lovelace
+      required:
+        - fullname
+      type: object
     User:
       properties:
         attendeeId:
