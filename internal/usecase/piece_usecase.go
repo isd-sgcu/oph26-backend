@@ -1,6 +1,7 @@
 package usecase
 
 import (
+	"errors"
 	"oph26-backend/internal/entity"
 	pieceModel "oph26-backend/internal/model/piece"
 	"oph26-backend/internal/repository"
@@ -8,6 +9,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
 type PieceUsecase interface {
@@ -66,20 +68,35 @@ func (u *PieceUsecaseImpl) GetMyPiece(c *fiber.Ctx) error {
 	}
 
 	if time.Now().After(piece.ExpireDate) {
-		newCode, err := generatePieceCode()
-		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-				"error": "Cannot generate new piece code",
-			})
+		const maxRetries = 5
+		var newPiece *entity.MyPiece
+		for range maxRetries {
+			newCode, err := generatePieceCode()
+			if err != nil {
+				return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+					"error": "Cannot generate new piece code",
+				})
+			}
+			candidate := &entity.MyPiece{
+				AttendeeID: piece.AttendeeID,
+				PieceCode:  newCode,
+				ExpireDate: time.Now().Add(24 * time.Hour),
+			}
+			err = u.PieceRepo.CreateMyPiece(candidate)
+			if errors.Is(err, gorm.ErrDuplicatedKey) {
+				continue
+			}
+			if err != nil {
+				return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+					"error": "Failed to create new piece",
+				})
+			}
+			newPiece = candidate
+			break
 		}
-		newPiece := &entity.MyPiece{
-			AttendeeID: piece.AttendeeID,
-			PieceCode:  newCode,
-			ExpireDate: time.Now().Add(24 * time.Hour),
-		}
-		if err := u.PieceRepo.CreateMyPiece(newPiece); err != nil {
+		if newPiece == nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-				"error": "Failed to create new piece",
+				"error": "Failed to create new piece after retries",
 			})
 		}
 		piece = newPiece
