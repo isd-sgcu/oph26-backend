@@ -13,6 +13,7 @@ type RouteConfig struct {
 	AttendeeUsecase     usecase.AttendeeUsecase
 	UserUsecase         usecase.UserUsecase
 	PieceUsecase        usecase.PieceUsecase
+	LeaderboardUsecase usecase.LeaderboardUsecase
 	AuthMiddleware      fiber.Handler
 	RateLimitMiddleware fiber.Handler
 }
@@ -54,6 +55,9 @@ func SetupRoutes(r *fiber.App, c RouteConfig) {
 			pieces.Get("/me/collected", c.PieceUsecase.GetCollectedPieces)
 		}
 
+		leaderboards := api.Group("/leaderboards", c.AuthMiddleware)
+		{
+			leaderboards.Get("/me", c.LeaderboardUsecase.GetMyLeaderboard)
 		favWorkshop := api.Group("/favorite_workshops", c.AuthMiddleware)
 		{
 			favWorkshop.Get("/me", c.AttendeeUsecase.GetMyFavWorkshops)
