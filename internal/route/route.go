@@ -11,8 +11,9 @@ import (
 type RouteConfig struct {
 	AuthUsecase         usecase.AuthUsecase
 	AttendeeUsecase     usecase.AttendeeUsecase
-	UserUsecase         usecase.UserUsecase
+	CheckinUsecase      usecase.CheckinUsecase
 	PieceUsecase        usecase.PieceUsecase
+	UserUsecase         usecase.UserUsecase
 	LeaderboardUsecase  usecase.LeaderboardUsecase
 	AuthMiddleware      fiber.Handler
 	RateLimitMiddleware fiber.Handler
@@ -66,6 +67,11 @@ func SetupRoutes(r *fiber.App, c RouteConfig) {
 		{
 			favWorkshop.Get("/me", c.AttendeeUsecase.GetMyFavWorkshops)
 			favWorkshop.Put("/me", c.AttendeeUsecase.PutMyFavWorkshops)
+		}
+
+		checkin := api.Group("/checkin", c.AuthMiddleware)
+		{
+			checkin.Post("/", c.CheckinUsecase.CheckIn)
 		}
 	}
 }

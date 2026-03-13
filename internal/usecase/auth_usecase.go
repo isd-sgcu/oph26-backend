@@ -91,7 +91,7 @@ func (u *AuthUsecaseImpl) Login(c *fiber.Ctx) error {
 		} else {
 			user = &entity.User{
 				Email: email,
-				Role:  "user", // Default role
+				Role:  "attendee", // Default role
 			}
 			if err := u.UserRepository.Create(user); err != nil {
 				return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{

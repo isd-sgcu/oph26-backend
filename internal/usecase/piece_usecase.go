@@ -108,7 +108,7 @@ func (u *PieceUsecaseImpl) GetCollectedPieces(c *fiber.Ctx) error {
 		})
 	}
 
-	collected, err := u.PieceRepo.FindCollectedPiecesByUserID(userID)
+	collected, err := u.PieceRepo.FindCollectedPiecesByAttendeeID(attendee.ID)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
@@ -124,7 +124,7 @@ func (u *PieceUsecaseImpl) GetCollectedPieces(c *fiber.Ctx) error {
 		friendPieces = append(friendPieces, fp)
 	}
 
-	facultyCounts, err := u.PieceRepo.CountCollectedByFaculty(userID)
+	facultyCounts, err := u.PieceRepo.CountCollectedByFaculty(attendee.ID)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
@@ -168,6 +168,16 @@ func (u *PieceUsecaseImpl) CollectPiece(c *fiber.Ctx) error {
 		})
 	}
 
+	attendee, err := u.PieceRepo.FindAttendeeByUserID(userID)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	}
+	if attendee == nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+			"error": "Attendee not found",
+		})
+	}
+
 	var reqBody pieceModel.CollectPieceRequest
 	if err := c.BodyParser(&reqBody); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
@@ -198,13 +208,13 @@ func (u *PieceUsecaseImpl) CollectPiece(c *fiber.Ctx) error {
 		})
 	}
 
-	if friendPiece.Attendee.UserID == userID {
+	if friendPiece.AttendeeID == attendee.ID {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "Cannot collect your own piece",
 		})
 	}
 
-	existing, err := u.PieceRepo.FindCollectedPiece(userID, friendPiece.ID)
+	existing, err := u.PieceRepo.FindCollectedPiece(attendee.ID, friendPiece.ID)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
@@ -216,7 +226,7 @@ func (u *PieceUsecaseImpl) CollectPiece(c *fiber.Ctx) error {
 
 	now := time.Now()
 	cp := entity.CollectedPiece{
-		UserID:      userID,
+		AttendeeID:  attendee.ID,
 		PieceID:     friendPiece.ID,
 		CollectedAt: now,
 	}
