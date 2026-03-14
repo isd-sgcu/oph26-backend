@@ -61,8 +61,7 @@ func main() {
 		UserUsecase:         userUsecase,
 		PieceUsecase:        pieceUsecase,
 		RateLimitMiddleware: rateLimitMiddleware,
-		LeaderboardUsecase: leaderboardUsecase,
-		RateLimitMiddleware: rateLimitMiddleWare,
+		LeaderboardUsecase:  leaderboardUsecase,
 	})
 
 	log.Fatal(r.Listen(":8080"))

@@ -59,6 +59,8 @@ func SetupRoutes(r *fiber.App, c RouteConfig) {
 		leaderboards := api.Group("/leaderboards", c.AuthMiddleware)
 		{
 			leaderboards.Get("/me", c.LeaderboardUsecase.GetMyLeaderboard)
+		}
+
 		favWorkshop := api.Group("/favorite_workshops", c.AuthMiddleware)
 		{
 			favWorkshop.Get("/me", c.AttendeeUsecase.GetMyFavWorkshops)
