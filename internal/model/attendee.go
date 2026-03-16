@@ -243,7 +243,7 @@ type Objective string
 const (
 	ObjectiveWorkshop      Objective = "เพื่อเข้าร่วมกิจกรรมและเวิร์กชอปของคณะ/สาขาที่สนใจ"
 	ObjectiveCurriculum    Objective = "เพื่อศึกษารายละเอียดหลักสูตร การเรียนการสอน และเส้นทางอาชีพ"
-	ObjectiveSelfExplore   Objective = "เพื่อค้นหาตนเองและสำรวจความสนใจของตนเอง\n"
+	ObjectiveSelfExplore   Objective = "เพื่อค้นหาตนเองและสำรวจความสนใจของตนเอง"
 	ObjectivePrepare       Objective = "เพื่อเตรียมความพร้อมก่อนตัดสินใจเลือกคณะหรือมหาวิทยาลัย"
 	ObjectiveAdmission     Objective = "เพื่อสอบถามข้อมูลการสมัครเรียน ทุนการศึกษา และเกณฑ์การคัดเลือก"
 	ObjectiveVisit         Objective = "เพื่อเยี่ยมชมบรรยากาศภายในมหาวิทยาลัยและสิ่งอำนวยความสะดวก"
