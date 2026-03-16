@@ -30,7 +30,7 @@ type Attendee struct {
 	MyPiece                       *MyPiece
 	CertificateName               *string    `gorm:"type:text"`
 	CheckinStaffID                *uuid.UUID `gorm:"type:uuid"`
-	FavoriteWorkshops             StringSet `gorm:"type:text[]"`
+	FavoriteWorkshops             StringSet  `gorm:"type:text[]"`
 	CreatedAt                     time.Time
 	UpdatedAt                     time.Time
 }

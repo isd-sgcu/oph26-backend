@@ -23,17 +23,16 @@ func NewScoreRepository(db *gorm.DB) ScoreRepository {
 }
 
 func (r *ScoreRepositoryImpl) IncrementCountByIndex(userID uuid.UUID, index int) error {
-    if index < 1 || index > 20 {
-        return fmt.Errorf("faculty index must be in range 1..20, got %d", index)
-    }
+	if index < 1 || index > 20 {
+		return fmt.Errorf("faculty index must be in range 1..20, got %d", index)
+	}
 
-    return r.DB.Exec(`
+	return r.DB.Exec(`
         UPDATE scores
         SET count[?] = count[?] + 1
         WHERE user_id = ?
     `, index, index, userID).Error
 }
-
 
 func (r *ScoreRepositoryImpl) Count() (int, error) {
 	var count int64
