@@ -14,7 +14,7 @@ type RouteConfig struct {
 	CheckinUsecase      usecase.CheckinUsecase
 	PieceUsecase        usecase.PieceUsecase
 	UserUsecase         usecase.UserUsecase
-	LeaderboardUsecase usecase.LeaderboardUsecase
+	LeaderboardUsecase  usecase.LeaderboardUsecase
 	AuthMiddleware      fiber.Handler
 	RateLimitMiddleware fiber.Handler
 }
@@ -27,6 +27,12 @@ func SetupRoutes(r *fiber.App, c RouteConfig) {
 		return c.JSON(fiber.Map{
 			"status": "up",
 			"uptime": uptime,
+		})
+	})
+
+	r.Get("/test", func(c *fiber.Ctx) error {
+		return c.JSON(fiber.Map{
+			"ok": true,
 		})
 	})
 
