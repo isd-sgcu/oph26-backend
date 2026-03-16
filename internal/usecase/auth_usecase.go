@@ -31,14 +31,23 @@ type AuthUsecaseImpl struct {
 	AppEnv                 string
 }
 
-func NewAuthUsecase(userRepository repository.UserRepository, staffRepository repository.StaffRepository, refreshTokenRepository repository.RefreshTokenRepository, googleClientID string, jwtSecret string, appEnv string) AuthUsecase {
+type AuthUsecaseConfig struct {
+	UserRepository         repository.UserRepository
+	StaffRepository        repository.StaffRepository
+	RefreshTokenRepository repository.RefreshTokenRepository
+	GoogleClientID         string
+	JWTSecret              string
+	AppEnv                 string
+}
+
+func NewAuthUsecase(config AuthUsecaseConfig) AuthUsecase {
 	return &AuthUsecaseImpl{
-		UserRepository:         userRepository,
-		StaffRepository:        staffRepository,
-		RefreshTokenRepository: refreshTokenRepository,
-		GoogleClientID:         googleClientID,
-		JWTSecret:              jwtSecret,
-		AppEnv:                 appEnv,
+		UserRepository:         config.UserRepository,
+		StaffRepository:        config.StaffRepository,
+		RefreshTokenRepository: config.RefreshTokenRepository,
+		GoogleClientID:         config.GoogleClientID,
+		JWTSecret:              config.JWTSecret,
+		AppEnv:                 config.AppEnv,
 	}
 }
 
