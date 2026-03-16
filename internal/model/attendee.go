@@ -241,13 +241,25 @@ func ProvinceIsValid(input string) bool {
 type Objective string
 
 const (
-	Explorechula   Objective = "เยี่ยมชมบรรยากาศของมหาวิทยาลัย"
-	OtherObjective Objective = "อื่น ๆ"
+	ObjectiveWorkshop      Objective = "เพื่อเข้าร่วมกิจกรรมและเวิร์กชอปของคณะ/สาขาที่สนใจ"
+	ObjectiveCurriculum    Objective = "เพื่อศึกษารายละเอียดหลักสูตร การเรียนการสอน และเส้นทางอาชีพ"
+	ObjectiveSelfExplore   Objective = "เพื่อค้นหาตนเองและสำรวจความสนใจของตนเอง"
+	ObjectivePrepare       Objective = "เพื่อเตรียมความพร้อมก่อนตัดสินใจเลือกคณะหรือมหาวิทยาลัย"
+	ObjectiveAdmission     Objective = "เพื่อสอบถามข้อมูลการสมัครเรียน ทุนการศึกษา และเกณฑ์การคัดเลือก"
+	ObjectiveVisit         Objective = "เพื่อเยี่ยมชมบรรยากาศภายในมหาวิทยาลัยและสิ่งอำนวยความสะดวก"
+	ObjectiveTalkToAlumni  Objective = "เพื่อพูดคุยกับอาจารย์ รุ่นพี่ หรือศิษย์เก่าเกี่ยวกับประสบการณ์การเรียน"
+	OtherObjective         Objective = "อื่น ๆ"
 )
 
 var ObjectiveSet = map[Objective]struct{}{
-	Explorechula:   {},
-	OtherObjective: {},
+	ObjectiveWorkshop:     {},
+	ObjectiveCurriculum:   {},
+	ObjectiveSelfExplore:  {},
+	ObjectivePrepare:      {},
+	ObjectiveAdmission:    {},
+	ObjectiveVisit:        {},
+	ObjectiveTalkToAlumni: {},
+	OtherObjective:        {},
 }
 
 func ObjectiveIsValid(input string) bool {
@@ -272,11 +284,25 @@ func ObjectivesAreValid(input []string) bool {
 type NewsSource string
 
 const (
-	OtherNewsSource NewsSource = "อื่น ๆ"
+	NewsSourceFacebook    NewsSource = "Facebook"
+	NewsSourceInstagram   NewsSource = "Instagram"
+	NewsSourceX           NewsSource = "X"
+	NewsSourceTiktok      NewsSource = "Tiktok"
+	NewsSourceCamphub     NewsSource = "Camphub"
+	NewsSourceBillboard   NewsSource = "ป้ายโฆษณาต่าง ๆ"
+	NewsSourceWordOfMouth NewsSource = "ผู้ปกครอง/คนรู้จัก"
+	OtherNewsSource       NewsSource = "อื่น ๆ"
 )
 
 var NewsSourceSet = map[NewsSource]struct{}{
-	OtherNewsSource: {},
+	NewsSourceFacebook:    {},
+	NewsSourceInstagram:   {},
+	NewsSourceX:           {},
+	NewsSourceTiktok:      {},
+	NewsSourceCamphub:     {},
+	NewsSourceBillboard:   {},
+	NewsSourceWordOfMouth: {},
+	OtherNewsSource:       {},
 }
 
 func NewsSourceIsValid(input string) bool {
@@ -301,37 +327,45 @@ func NewsSourcesAreValid(input []string) bool {
 type StudyLevel string
 
 const (
-	Elementary        StudyLevel = "ประถมศึกษา"
-	Matthayom1        StudyLevel = "มัธยมศึกษาปีที่ 1"
-	Matthayom2        StudyLevel = "มัธยมศึกษาปีที่ 2"
-	Matthayom3        StudyLevel = "มัธยมศึกษาปีที่ 3"
-	Matthayom4        StudyLevel = "มัธยมศึกษาปีที่ 4"
-	Matthayom5        StudyLevel = "มัธยมศึกษาปีที่ 5"
-	Matthayom6        StudyLevel = "มัธยมศึกษาปีที่ 6"
-	Vocational1       StudyLevel = "ปวช. 1"
-	Vocational2       StudyLevel = "ปวช. 2"
-	Vocational3       StudyLevel = "ปวช. 3"
-	HigherVocational1 StudyLevel = "ปวส. 1"
-	HigherVocational2 StudyLevel = "ปวส. 2"
-	HigherEducation   StudyLevel = "อุดมศึกษา"
-	OtherEducation    StudyLevel = "อื่น ๆ"
+	Elementary          StudyLevel = "ประถมศึกษา"
+	Matthayom1          StudyLevel = "มัธยมศึกษาปีที่ 1"
+	Matthayom2          StudyLevel = "มัธยมศึกษาปีที่ 2"
+	Matthayom3          StudyLevel = "มัธยมศึกษาปีที่ 3"
+	Matthayom4          StudyLevel = "มัธยมศึกษาปีที่ 4"
+	Matthayom5          StudyLevel = "มัธยมศึกษาปีที่ 5"
+	Matthayom6          StudyLevel = "มัธยมศึกษาปีที่ 6"
+	Vocational1         StudyLevel = "ปวช. 1"
+	Vocational2         StudyLevel = "ปวช. 2"
+	Vocational3         StudyLevel = "ปวช. 3"
+	HigherVocational1   StudyLevel = "ปวส. 1"
+	HigherVocational2   StudyLevel = "ปวส. 2"
+	HigherEducation     StudyLevel = "อุดมศึกษา"
+	OtherEducation      StudyLevel = "อื่น ๆ"
+	MiddleSchoolGroup   StudyLevel = "มัธยมศึกษาตอนต้น"
+	HighSchoolGroup     StudyLevel = "มัธยมศึกษาตอนปลาย"
+	VocationalGroup     StudyLevel = "ปวช."
+	HighVocationalGroup StudyLevel = "ปวส."
 )
 
 var StudyLevelSet = map[StudyLevel]struct{}{
-	Elementary:        {},
-	Matthayom1:        {},
-	Matthayom2:        {},
-	Matthayom3:        {},
-	Matthayom4:        {},
-	Matthayom5:        {},
-	Matthayom6:        {},
-	Vocational1:       {},
-	Vocational2:       {},
-	Vocational3:       {},
-	HigherVocational1: {},
-	HigherVocational2: {},
-	HigherEducation:   {},
-	OtherEducation:    {},
+	Elementary:          {},
+	Matthayom1:          {},
+	Matthayom2:          {},
+	Matthayom3:          {},
+	Matthayom4:          {},
+	Matthayom5:          {},
+	Matthayom6:          {},
+	Vocational1:         {},
+	Vocational2:         {},
+	Vocational3:         {},
+	HigherVocational1:   {},
+	HigherVocational2:   {},
+	HigherEducation:     {},
+	OtherEducation:      {},
+	MiddleSchoolGroup:   {},
+	HighSchoolGroup:     {},
+	VocationalGroup:     {},
+	HighVocationalGroup: {},
 }
 
 func StudyLevelIsValid(input string) bool {

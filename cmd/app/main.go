@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/cors"
 )
 
 func init() {
@@ -31,6 +32,13 @@ func main() {
 	}
 
 	r := fiber.New()
+
+	r.Use(cors.New(cors.Config{
+		AllowOrigins:     "http://localhost:3000",
+		AllowMethods:     "GET,POST,PUT,DELETE,OPTIONS",
+		AllowHeaders:     "Origin,Content-Type,Authorization",
+		AllowCredentials: true,
+	}))
 
 	// Init Dependencies
 	userRepo := repository.NewUserRepository(config.DB)
