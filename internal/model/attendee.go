@@ -241,23 +241,25 @@ func ProvinceIsValid(input string) bool {
 type Objective string
 
 const (
-	LearnAboutFaculties Objective = "learnaboutfaculties"
-	FindMyself          Objective = "findmyself"
-	PrepareForDecision  Objective = "preparefordecision"
-	AskAboutAdmission   Objective = "askaboutadmission"
-	ExploreChula        Objective = "explorechula"
-	TalkToTeachers      Objective = "talktoteachers"
-	OtherObjective      Objective = "other"
+	ObjectiveWorkshop     Objective = "เพื่อเข้าร่วมกิจกรรมและเวิร์กชอปของคณะ/สาขาที่สนใจ"
+	ObjectiveCurriculum   Objective = "เพื่อศึกษารายละเอียดหลักสูตร การเรียนการสอน และเส้นทางอาชีพ"
+	ObjectiveSelfExplore  Objective = "เพื่อค้นหาตนเองและสำรวจความสนใจของตนเอง"
+	ObjectivePrepare      Objective = "เพื่อเตรียมความพร้อมก่อนตัดสินใจเลือกคณะหรือมหาวิทยาลัย"
+	ObjectiveAdmission    Objective = "เพื่อสอบถามข้อมูลการสมัครเรียน ทุนการศึกษา และเกณฑ์การคัดเลือก"
+	ObjectiveVisit        Objective = "เพื่อเยี่ยมชมบรรยากาศภายในมหาวิทยาลัยและสิ่งอำนวยความสะดวก"
+	ObjectiveTalkToAlumni Objective = "เพื่อพูดคุยกับอาจารย์ รุ่นพี่ หรือศิษย์เก่าเกี่ยวกับประสบการณ์การเรียน"
+	OtherObjective        Objective = "อื่น ๆ"
 )
 
 var ObjectiveSet = map[Objective]struct{}{
-	LearnAboutFaculties: {},
-	FindMyself:          {},
-	PrepareForDecision:  {},
-	AskAboutAdmission:   {},
-	ExploreChula:        {},
-	TalkToTeachers:      {},
-	OtherObjective:      {},
+	ObjectiveWorkshop:     {},
+	ObjectiveCurriculum:   {},
+	ObjectiveSelfExplore:  {},
+	ObjectivePrepare:      {},
+	ObjectiveAdmission:    {},
+	ObjectiveVisit:        {},
+	ObjectiveTalkToAlumni: {},
+	OtherObjective:        {},
 }
 
 func ObjectiveIsValid(input string) bool {
