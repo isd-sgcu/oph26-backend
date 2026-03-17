@@ -22,15 +22,18 @@ func main() {
 	cfg := config.LoadEnv()
 	config.InitDB(cfg)
 
-	allowedOrigins := cfg.AllowOrigins
 	switch cfg.AppEnv {
 	case "production":
 		log.Println("Running in PRODUCTION mode")
 	case "development":
-		allowedOrigins = "*"
 		log.Println("Running in development mode")
 	default:
 		log.Printf("Running in unknown mode: %s\n", cfg.AppEnv)
+	}
+
+	allowedOrigins := cfg.AllowOrigins
+	if cfg.AppEnv == "development" {
+		allowedOrigins = "*"
 	}
 
 	r := fiber.New()
