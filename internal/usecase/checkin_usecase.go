@@ -37,8 +37,8 @@ func (u *CheckinUsecaseImpl) CheckIn(c *fiber.Ctx) error {
 		})
 	}
 
-	userId, err := c.Locals("user_id").(uuid.UUID)
-	if err {
+	userId, ok := c.Locals("user_id").(uuid.UUID)
+	if !ok {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 			"error": "Unauthorized",
 		})
