@@ -268,7 +268,7 @@ func (u *AttendeeUsecaseImpl) PostAttendee(c *fiber.Ctx) error {
 		})
 	}
 
-	if request.StudyLevel != nil && !model.StudyLevelIsValid(*request.StudyLevel) {
+	if request.AttendeeType == "student" && request.StudyLevel != nil && !model.StudyLevelIsValid(*request.StudyLevel) {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "Invalid request body; unknown study_level",
 		})
