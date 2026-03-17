@@ -31,15 +31,10 @@ func main() {
 		log.Printf("Running in unknown mode: %s\n", cfg.AppEnv)
 	}
 
-	allowedOrigins := cfg.AllowOrigins
-	if cfg.AppEnv == "development" {
-		allowedOrigins = "*"
-	}
-
 	r := fiber.New()
 
 	r.Use(cors.New(cors.Config{
-		AllowOrigins:     allowedOrigins,
+		AllowOrigins:     cfg.AllowOrigins,
 		AllowMethods:     "GET,POST,PUT,DELETE,OPTIONS",
 		AllowHeaders:     "Origin,Content-Type,Authorization",
 		AllowCredentials: true,
