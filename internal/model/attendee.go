@@ -327,18 +327,27 @@ func NewsSourcesAreValid(input []string) bool {
 type StudyLevel string
 
 const (
-	MatthayomTon   StudyLevel = "matthayom_ton"
-	MatthayomPlai  StudyLevel = "matthayom_plai"
-	Vocational     StudyLevel = "vocational"
-	OtherEducation StudyLevel = "other"
+	Elementary       StudyLevel = "elementary"
+	MatthayomTon     StudyLevel = "matthayom_ton"
+	MatthayomPlai    StudyLevel = "matthayom_plai"
+	Vocational       StudyLevel = "vocational"
+	HigherVocational StudyLevel = "highervocational"
+	Undergraduate    StudyLevel = "undergraduate"
+	Master           StudyLevel = "master"
+	Doctor           StudyLevel = "doctor"
+	OtherEducation   StudyLevel = "other"
 )
 
 var StudyLevelSet = map[StudyLevel]struct{}{
-
-	MatthayomTon:   {},
-	MatthayomPlai:  {},
-	Vocational:     {},
-	OtherEducation: {},
+	Elementary:       {},
+	MatthayomTon:     {},
+	MatthayomPlai:    {},
+	Vocational:       {},
+	HigherVocational: {},
+	Undergraduate:    {},
+	Master:           {},
+	Doctor:           {},
+	OtherEducation:   {},
 }
 
 func StudyLevelIsValid(input StudyLevel) bool {
