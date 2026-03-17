@@ -356,7 +356,7 @@ func (u *AttendeeUsecaseImpl) PostAttendee(c *fiber.Ctx) error {
 		TicketCode:           ticketCode,
 		TransportationMethod: request.TransportationMethod,
 	}
-	if request.InterestedFaculty != nil {
+	if request.InterestedFaculty != nil && len(*request.InterestedFaculty) > 0 {
 		attendee.InterestedFaculty = *request.InterestedFaculty
 		first := (*request.InterestedFaculty)[0]
 		attendee.InitialFirstInterestedFaculty = first
