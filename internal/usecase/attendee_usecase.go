@@ -280,10 +280,16 @@ func (u *AttendeeUsecaseImpl) PostAttendee(c *fiber.Ctx) error {
 			"error": "Invalid request body; interested_faculty is required for student",
 		})
 	}
-	if request.InterestedFaculty != nil && !model.FacultiesAreValid(*request.InterestedFaculty) {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid request body; unknown faculty",
-		})
+	if request.InterestedFaculty != nil {
+		faculties := make([]string, len(*request.InterestedFaculty))
+		for i, f := range *request.InterestedFaculty {
+			faculties[i] = string(f)
+		}
+		if !model.FacultiesAreValid(faculties) {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+				"error": "Invalid request body; unknown faculty",
+			})
+		}
 	}
 
 	if !model.ObjectivesAreValid(request.ObjectiveSelected) {
@@ -353,7 +359,7 @@ func (u *AttendeeUsecaseImpl) PostAttendee(c *fiber.Ctx) error {
 	if request.InterestedFaculty != nil {
 		attendee.InterestedFaculty = *request.InterestedFaculty
 		first := (*request.InterestedFaculty)[0]
-		attendee.InitialFirstInterestedFaculty = &first
+		attendee.InitialFirstInterestedFaculty = first
 	}
 
 	found, err2 := u.attendeeRepo.Upsert(&attendee)
@@ -477,7 +483,11 @@ func (u *AttendeeUsecaseImpl) PutAttendee(c *fiber.Ctx) error {
 
 	// Validate enum fields
 	if reqBody.InterestedFaculty != nil {
-		if !model.FacultiesAreValid(*reqBody.InterestedFaculty) {
+		faculties := make([]string, len(*reqBody.InterestedFaculty))
+		for i, f := range *reqBody.InterestedFaculty {
+			faculties[i] = string(f)
+		}
+		if !model.FacultiesAreValid(faculties) {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 				"error": "Invalid request body; unknown faculty",
 			})
