@@ -25,8 +25,8 @@ type Attendee struct {
 	SchoolName                    *string        `gorm:"type:text"`
 	NewsSourceSelected            pq.StringArray `gorm:"type:text[]"`
 	NewsSourcesOther              *string        `gorm:"type:text"`
-	InitialFirstInterestedFaculty model.Faculty `gorm:"type:text"`
-	InterestedFaculty             []model.Faculty `gorm:"type:text[]"`
+	InitialFirstInterestedFaculty model.Faculty  `gorm:"type:text"`
+	InterestedFaculty             FacultyList    `gorm:"type:text[]"`
 	ObjectiveSelected             pq.StringArray `gorm:"type:text[]"`
 	ObjectiveOther                *string        `gorm:"type:text"`
 	TicketCode                    string         `gorm:"type:char(7);not null;uniqueIndex"`
@@ -77,4 +77,26 @@ func (s StringSet) ToSlice() []string {
 		result = append(result, item)
 	}
 	return result
+}
+
+type FacultyList []model.Faculty
+
+func (f FacultyList) Value() (driver.Value, error) {
+	strs := make([]string, len(f))
+	for i, fac := range f {
+		strs[i] = string(fac)
+	}
+	return pq.Array(strs).Value()
+}
+
+func (f *FacultyList) Scan(value interface{}) error {
+	var strs pq.StringArray
+	if err := strs.Scan(value); err != nil {
+		return err
+	}
+	*f = make(FacultyList, len(strs))
+	for i, s := range strs {
+		(*f)[i] = model.Faculty(s)
+	}
+	return nil
 }
