@@ -1,8 +1,6 @@
 package usecase
 
 import (
-	"oph26-backend/internal/model"
-	attendeeModel "oph26-backend/internal/model/attendee"
 	checkinModel "oph26-backend/internal/model/checkin"
 	"oph26-backend/internal/repository"
 
@@ -82,42 +80,17 @@ func (u *CheckinUsecaseImpl) CheckIn(c *fiber.Ctx) error {
 	// The response body is compliant with api-spec.yml definition for CheckinConflictResponse
 	if len(checkins) > 0 {
 		firstCheckin := checkins[0]
-		conflictResponseBody := checkinModel.CheckinEntryConflictResponse{
+		conflictResponseBody := checkinModel.CheckinConflictResponse{
 			Error: "Attendee already checked in with this faculty",
-			CheckinEntry: checkinModel.CheckinEntry{
-				ID:          firstCheckin.ID,
-				AttendeeID:  firstCheckin.AttendeeID,
-				Faculty:     firstCheckin.Faculty,
-				StaffID:     firstCheckin.StaffID,
-				CheckedInAt: firstCheckin.CheckedInAt.String(),
-			},
-			Attendee: attendeeModel.AttendeeResponse{
-				ID:                            attendee.ID,
-				UserID:                        attendee.UserID,
-				Firstname:                     attendee.Firstname,
-				Surname:                       attendee.Surname,
-				AttendeeType:                  attendee.AttendeeType,
-				DateOfBirth:                   formatDateOfBirth(attendee.DateOfBirth),
-				Province:                      attendee.Province,
-				StudyLevel:                    attendee.StudyLevel,
-				SchoolName:                    attendee.SchoolName,
-				NewsSourceSelected:            attendee.NewsSourceSelected,
-				NewsSourcesOther:              attendee.NewsSourcesOther,
-				InitialFirstInterestedFaculty: attendee.InitialFirstInterestedFaculty,
-				InterestedFaculty:             attendee.InterestedFaculty,
-				ObjectiveSelected:             attendee.ObjectiveSelected,
-				ObjectiveOther:                attendee.ObjectiveOther,
-				TicketCode:                    attendee.TicketCode,
-			},
-			Staff: model.StaffResponse{
-				ID:        staff.ID,
-				UserID:    staff.UserID,
-				Firstname: staff.Firstname,
-				Surname:   staff.Surname,
-				Faculty:   staff.Faculty,
+			CheckinResponse: checkinModel.CheckinResponse{
+				CheckedInAt: firstCheckin.CheckedInAt,
+				UserID:      attendee.UserID,
+				Firstname:   attendee.Firstname,
+				Surname:     attendee.Surname,
+				TicketCode:  attendee.TicketCode,
+				Faculty:     staff.Faculty,
 			},
 		}
-
 		return c.Status(fiber.StatusConflict).JSON(conflictResponseBody)
 	}
 
@@ -137,6 +110,7 @@ func (u *CheckinUsecaseImpl) CheckIn(c *fiber.Ctx) error {
 			Firstname:   attendee.Firstname,
 			Surname:     attendee.Surname,
 			TicketCode:  attendee.TicketCode,
+			Faculty:     staff.Faculty,
 		},
 	})
 }
