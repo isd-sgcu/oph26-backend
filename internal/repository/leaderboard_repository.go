@@ -5,6 +5,7 @@ import (
 	"oph26-backend/internal/entity"
 
 	"github.com/google/uuid"
+	"github.com/lib/pq"
 	"gorm.io/gorm"
 )
 
@@ -15,10 +16,18 @@ type LeaderboardRepositoryImpl struct {
 type LeaderboardRepository interface {
 	FindLeaderboardByUserID(userID uuid.UUID) (*entity.Leaderboard, error)
 	UpdateIsTop() error
+	Create(leaderboard *entity.Leaderboard) error
 }
 
 func NewLeaderboardRepository(db *gorm.DB) LeaderboardRepository {
 	return &LeaderboardRepositoryImpl{DB: db}
+}
+
+func (r *LeaderboardRepositoryImpl) GenerateLeaderboard(user entity.User) entity.Leaderboard {
+	return entity.Leaderboard{
+		UserID: user.ID,
+		IsTop:  pq.BoolArray(make([]bool, 20)),
+	}
 }
 
 func (r *LeaderboardRepositoryImpl) FindLeaderboardByUserID(userID uuid.UUID) (*entity.Leaderboard, error) {
@@ -77,4 +86,8 @@ func (r *LeaderboardRepositoryImpl) UpdateIsTop() error {
 
 		return nil
 	})
+}
+
+func (r *LeaderboardRepositoryImpl) Create(leaderboard *entity.Leaderboard) error {
+	return r.DB.Create(leaderboard).Error
 }

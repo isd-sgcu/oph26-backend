@@ -43,8 +43,6 @@ func main() {
 	// User & Staff
 	userRepo := repository.NewUserRepository(config.DB)
 	staffRepo := repository.NewStaffRepository(config.DB)
-	userUsecase := usecase.NewUserUsecase(userRepo)
-
 	// Auth
 	refreshTokenRepo := repository.NewRefreshTokenRepository(config.DB)
 	authUsecase := usecase.NewAuthUsecase(usecase.AuthUsecaseConfig{
@@ -58,18 +56,15 @@ func main() {
 
 	// Attendee
 	attendeeRepo := repository.NewAttendeeRepository(config.DB)
-	attendeeUsecase := usecase.NewAttendeeUsecase(attendeeRepo, userRepo)
-
-	// Checkin
-	checkinRepo := repository.NewCheckinRepository(config.DB)
-	checkinUsecase := usecase.NewCheckinUsecase(attendeeRepo, staffRepo, checkinRepo)
-
-	// Leaderboard
 	leaderboardRepo := repository.NewLeaderboardRepository(config.DB)
 	scoreRepo := repository.NewScoreRepository(config.DB)
-	leaderboardUsecase := usecase.NewLeaderboardUsecase(leaderboardRepo, scoreRepo)
-
 	pieceRepo := repository.NewPieceRepository(config.DB)
+	checkinRepo := repository.NewCheckinRepository(config.DB)
+	// Checkin
+	userUsecase := usecase.NewUserUsecase(userRepo)
+	checkinUsecase := usecase.NewCheckinUsecase(attendeeRepo, staffRepo, checkinRepo)
+	attendeeUsecase := usecase.NewAttendeeUsecase(attendeeRepo, userRepo, leaderboardRepo)
+	leaderboardUsecase := usecase.NewLeaderboardUsecase(leaderboardRepo, scoreRepo)
 	pieceUsecase := usecase.NewPieceUsecase(pieceRepo, leaderboardUsecase)
 
 	// Init Middleware

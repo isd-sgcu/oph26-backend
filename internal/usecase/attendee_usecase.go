@@ -16,13 +16,15 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
+	"github.com/lib/pq"
 	"gorm.io/gorm"
 )
 
 type AttendeeUsecaseImpl struct {
-	userRepo     repository.UserRepository
-	attendeeRepo repository.AttendeeRepository
-	validate     *validator.Validate
+	userRepo        repository.UserRepository
+	attendeeRepo    repository.AttendeeRepository
+	leaderboardRepo repository.LeaderboardRepository
+	validate        *validator.Validate
 }
 
 type AttendeeUsecase interface {
@@ -33,13 +35,15 @@ type AttendeeUsecase interface {
 	UpdateCertificateName(c *fiber.Ctx) error
 	GetMyFavWorkshops(c *fiber.Ctx) error
 	PutMyFavWorkshops(c *fiber.Ctx) error
+	GenerateLeaderboard(user entity.User) entity.Leaderboard
 }
 
-func NewAttendeeUsecase(attendeeRepo repository.AttendeeRepository, userRepo repository.UserRepository) AttendeeUsecase {
+func NewAttendeeUsecase(attendeeRepo repository.AttendeeRepository, userRepo repository.UserRepository, leaderboardRepo repository.LeaderboardRepository) AttendeeUsecase {
 	return &AttendeeUsecaseImpl{
-		userRepo:     userRepo,
-		attendeeRepo: attendeeRepo,
-		validate:     validator.New(),
+		userRepo:        userRepo,
+		attendeeRepo:    attendeeRepo,
+		leaderboardRepo: leaderboardRepo,
+		validate:        validator.New(),
 	}
 }
 
@@ -373,6 +377,13 @@ func (u *AttendeeUsecaseImpl) PostAttendee(c *fiber.Ctx) error {
 	if found {
 		return c.Status(fiber.StatusConflict).JSON(fiber.Map{
 			"error": "Attendee already exists",
+		})
+	}
+
+	leaderboard := u.GenerateLeaderboard(entity.User{ID: userId})
+	if err := u.leaderboardRepo.Create(&leaderboard); err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to create leaderboard",
 		})
 	}
 
@@ -768,4 +779,11 @@ func (u *AttendeeUsecaseImpl) PutMyFavWorkshops(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{
 		"ok": true,
 	})
+}
+
+func (u *AttendeeUsecaseImpl) GenerateLeaderboard(user entity.User) entity.Leaderboard {
+	return entity.Leaderboard{
+		UserID: user.ID,
+		IsTop:  pq.BoolArray(make([]bool, 20)),
+	}
 }
