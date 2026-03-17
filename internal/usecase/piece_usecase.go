@@ -63,6 +63,11 @@ func (u *PieceUsecaseImpl) GetMyPiece(c *fiber.Ctx) error {
 			"error": "Pieces not found for the current user",
 		})
 	}
+	if attendee.AttendeeType != "student" {
+		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
+			"error": "Forbidden, only student attendees can access pieces",
+		})
+	}
 
 	piece, err := u.PieceRepo.FindMyPieceByAttendeeID(attendee.ID)
 	if err != nil {

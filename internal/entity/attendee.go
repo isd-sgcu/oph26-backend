@@ -4,33 +4,39 @@ import (
 	"database/sql/driver"
 	"time"
 
+	"oph26-backend/internal/model"
+
 	"github.com/google/uuid"
 
 	"github.com/lib/pq"
 )
 
 type Attendee struct {
-	ID                            uuid.UUID      `gorm:"type:uuid;default:uuid_generate_v4();primaryKey"`
-	UserID                        uuid.UUID      `gorm:"type:uuid;not null;uniqueIndex"`
-	User                          User           `gorm:"foreignKey:UserID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
-	Firstname                     string         `gorm:"not null"`
-	Surname                       string         `gorm:"not null"`
-	AttendeeType                  string         `gorm:"type:text;not null;check:attendee_type IN ('elementaryschool','highschool','parent','educationstaff','other')"`
-	Age                           int            `gorm:"not null"`
-	Province                      string         `gorm:"not null"`
-	StudyLevel                    *string        `gorm:"type:text"`
-	SchoolName                    *string        `gorm:"type:text"`
-	NewsSourceSelected            pq.StringArray `gorm:"type:text[]"`
-	NewsSourcesOther              *string        `gorm:"type:text"`
-	InitialFirstInterestedFaculty string         `gorm:"not null"`
-	InterestedFaculty             pq.StringArray `gorm:"type:text[];not null"`
-	ObjectiveSelected             pq.StringArray `gorm:"type:text[]"`
-	ObjectiveOther                *string        `gorm:"type:text"`
-	TicketCode                    string         `gorm:"type:char(7);not null;uniqueIndex"`
+	ID                            uuid.UUID         `gorm:"type:uuid;default:uuid_generate_v4();primaryKey"`
+	UserID                        uuid.UUID         `gorm:"type:uuid;not null;uniqueIndex"`
+	User                          User              `gorm:"foreignKey:UserID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
+	Firstname                     string            `gorm:"not null"`
+	Surname                       string            `gorm:"not null"`
+	AttendeeType                  string            `gorm:"type:text;not null;check:attendee_type IN ('student','parent','educationstaff','other')"`
+	DateOfBirth                   time.Time         `gorm:"type:date;not null"`
+	Province                      string            `gorm:"not null"`
+	District                      string            `gorm:"not null"`
+	StudyLevel                    *model.StudyLevel `gorm:"type:text"`
+	SchoolName                    *string           `gorm:"type:text"`
+	NewsSourceSelected            pq.StringArray    `gorm:"type:text[]"`
+	NewsSourcesOther              *string           `gorm:"type:text"`
+	InitialFirstInterestedFaculty model.Faculty     `gorm:"type:text"`
+	InterestedFaculty             FacultyList       `gorm:"type:text[]"`
+	ObjectiveSelected             pq.StringArray    `gorm:"type:text[]"`
+	ObjectiveOther                *string           `gorm:"type:text"`
+	TicketCode                    string            `gorm:"type:char(7);not null;uniqueIndex"`
 	MyPiece                       *MyPiece
 	CertificateName               *string    `gorm:"type:text"`
 	CheckinStaffID                *uuid.UUID `gorm:"type:uuid"`
+	CheckinStaff                  *Staff     `gorm:"foreignKey:CheckinStaffID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL"`
+	CheckedInAt                   *time.Time
 	FavoriteWorkshops             StringSet `gorm:"type:text[]"`
+	TransportationMethod          string
 	CreatedAt                     time.Time
 	UpdatedAt                     time.Time
 }
@@ -71,4 +77,26 @@ func (s StringSet) ToSlice() []string {
 		result = append(result, item)
 	}
 	return result
+}
+
+type FacultyList []model.Faculty
+
+func (f FacultyList) Value() (driver.Value, error) {
+	strs := make([]string, len(f))
+	for i, fac := range f {
+		strs[i] = string(fac)
+	}
+	return pq.Array(strs).Value()
+}
+
+func (f *FacultyList) Scan(value interface{}) error {
+	var strs pq.StringArray
+	if err := strs.Scan(value); err != nil {
+		return err
+	}
+	*f = make(FacultyList, len(strs))
+	for i, s := range strs {
+		(*f)[i] = model.Faculty(s)
+	}
+	return nil
 }

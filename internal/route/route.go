@@ -30,6 +30,12 @@ func SetupRoutes(r *fiber.App, c RouteConfig) {
 		})
 	})
 
+	r.Get("/test", func(c *fiber.Ctx) error {
+		return c.JSON(fiber.Map{
+			"ok": true,
+		})
+	})
+
 	api := r.Group("/api")
 	{
 		api.Get("/ping", usecase.Ping)

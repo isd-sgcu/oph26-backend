@@ -9,9 +9,9 @@ import (
 
 func seedUsers(db *gorm.DB) []entity.User {
 	users := []entity.User{
-		{Email: "attendee1@test.com", Role: "user"},
-		{Email: "attendee2@test.com", Role: "user"},
-		{Email: "attendee3@test.com", Role: "user"},
+		{Email: "attendee1@test.com", Role: "attendee"},
+		{Email: "attendee2@test.com", Role: "attendee"},
+		{Email: "attendee3@test.com", Role: "attendee"},
 		{Email: "staff1@chula.ac.th", Role: "staff"},
 		{Email: "staff2@chula.ac.th", Role: "staff"},
 	}
