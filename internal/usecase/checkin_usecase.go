@@ -8,6 +8,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
+	"time"
 )
 
 type CheckinUsecase interface {
@@ -130,23 +131,12 @@ func (u *CheckinUsecaseImpl) CheckIn(c *fiber.Ctx) error {
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
 		"ok": true,
-		"attendee": attendeeModel.AttendeeResponse{
-			ID:                            attendee.ID,
-			UserID:                        attendee.UserID,
-			Firstname:                     attendee.Firstname,
-			Surname:                       attendee.Surname,
-			AttendeeType:                  attendee.AttendeeType,
-			DateOfBirth:                   formatDateOfBirth(attendee.DateOfBirth),
-			Province:                      attendee.Province,
-			StudyLevel:                    attendee.StudyLevel,
-			SchoolName:                    attendee.SchoolName,
-			NewsSourceSelected:            attendee.NewsSourceSelected,
-			NewsSourcesOther:              attendee.NewsSourcesOther,
-			InitialFirstInterestedFaculty: attendee.InitialFirstInterestedFaculty,
-			InterestedFaculty:             attendee.InterestedFaculty,
-			ObjectiveSelected:             attendee.ObjectiveSelected,
-			ObjectiveOther:                attendee.ObjectiveOther,
-			TicketCode:                    attendee.TicketCode,
+		"attendee": checkinModel.CheckinResponse{
+			CheckedInAt: time.Now(),
+			UserID:      attendee.UserID,
+			Firstname:   attendee.Firstname,
+			Surname:     attendee.Surname,
+			TicketCode:  attendee.TicketCode,
 		},
 	})
 }
