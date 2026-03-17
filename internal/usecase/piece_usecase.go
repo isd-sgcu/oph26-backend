@@ -72,7 +72,7 @@ func (u *PieceUsecaseImpl) GetMyPiece(c *fiber.Ctx) error {
 		UserID:     attendee.UserID,
 		PieceCode:  piece.PieceCode,
 		ExpireDate: piece.ExpireDate,
-		Faculty:    *attendee.InitialFirstInterestedFaculty,
+		Faculty:    attendee.InitialFirstInterestedFaculty,
 	})
 }
 
@@ -115,7 +115,7 @@ func (u *PieceUsecaseImpl) GetCollectedPieces(c *fiber.Ctx) error {
 		fp := pieceModel.FriendPieceResponse{
 			ID:          cp.PieceID,
 			UserID:      cp.MyPiece.Attendee.UserID,
-			Faculty:     *cp.MyPiece.Attendee.InitialFirstInterestedFaculty,
+			Faculty:     cp.MyPiece.Attendee.InitialFirstInterestedFaculty,
 			CollectedAt: &cp.CollectedAt,
 		}
 		friendPieces = append(friendPieces, fp)
