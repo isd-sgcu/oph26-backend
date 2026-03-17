@@ -24,17 +24,10 @@ func NewLeaderboardUsecase(leaderboardRepository repository.LeaderboardRepositor
 }
 
 func (u *LeaderboardUsecaseImpl) GetMyLeaderboard(c *fiber.Ctx) error {
-	userIDStr, ok := c.Locals("user_id").(string)
+	userID, ok := c.Locals("user_id").(uuid.UUID)
 	if !ok {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "Failed to retrieve user id from context",
-		})
-	}
-
-	userID, err := uuid.Parse(userIDStr)
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": err.Error(),
 		})
 	}
 

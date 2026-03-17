@@ -31,11 +31,10 @@ func (u *PieceUsecaseImpl) GetMyPiece(c *fiber.Ctx) error {
 		})
 	}
 
-	userIDStr, _ := c.Locals("user_id").(string)
-	userID, err := uuid.Parse(userIDStr)
-	if err != nil {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-			"error": "Unauthorized: invalid user ID",
+	userID, ok := c.Locals("user_id").(uuid.UUID)
+	if !ok {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to retrieve user id from context",
 		})
 	}
 
@@ -48,6 +47,11 @@ func (u *PieceUsecaseImpl) GetMyPiece(c *fiber.Ctx) error {
 	if attendee == nil {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
 			"error": "Pieces not found for the current user",
+		})
+	}
+	if attendee.AttendeeType != "student" {
+		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
+			"error": "Forbidden, only student attendees can access pieces",
 		})
 	}
 
@@ -68,7 +72,7 @@ func (u *PieceUsecaseImpl) GetMyPiece(c *fiber.Ctx) error {
 		UserID:     attendee.UserID,
 		PieceCode:  piece.PieceCode,
 		ExpireDate: piece.ExpireDate,
-		Faculty:    attendee.InitialFirstInterestedFaculty,
+		Faculty:    *attendee.InitialFirstInterestedFaculty,
 	})
 }
 
@@ -80,11 +84,10 @@ func (u *PieceUsecaseImpl) GetCollectedPieces(c *fiber.Ctx) error {
 		})
 	}
 
-	userIDStr, _ := c.Locals("user_id").(string)
-	userID, err := uuid.Parse(userIDStr)
-	if err != nil {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-			"error": "Unauthorized: invalid user ID",
+	userID, ok := c.Locals("user_id").(uuid.UUID)
+	if !ok {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to retrieve user id from context",
 		})
 	}
 
@@ -112,7 +115,7 @@ func (u *PieceUsecaseImpl) GetCollectedPieces(c *fiber.Ctx) error {
 		fp := pieceModel.FriendPieceResponse{
 			ID:          cp.PieceID,
 			UserID:      cp.MyPiece.Attendee.UserID,
-			Faculty:     cp.MyPiece.Attendee.InitialFirstInterestedFaculty,
+			Faculty:     *cp.MyPiece.Attendee.InitialFirstInterestedFaculty,
 			CollectedAt: &cp.CollectedAt,
 		}
 		friendPieces = append(friendPieces, fp)

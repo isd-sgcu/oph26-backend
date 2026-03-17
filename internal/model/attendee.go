@@ -241,25 +241,23 @@ func ProvinceIsValid(input string) bool {
 type Objective string
 
 const (
-	ObjectiveWorkshop     Objective = "เพื่อเข้าร่วมกิจกรรมและเวิร์กชอปของคณะ/สาขาที่สนใจ"
-	ObjectiveCurriculum   Objective = "เพื่อศึกษารายละเอียดหลักสูตร การเรียนการสอน และเส้นทางอาชีพ"
-	ObjectiveSelfExplore  Objective = "เพื่อค้นหาตนเองและสำรวจความสนใจของตนเอง"
-	ObjectivePrepare      Objective = "เพื่อเตรียมความพร้อมก่อนตัดสินใจเลือกคณะหรือมหาวิทยาลัย"
-	ObjectiveAdmission    Objective = "เพื่อสอบถามข้อมูลการสมัครเรียน ทุนการศึกษา และเกณฑ์การคัดเลือก"
-	ObjectiveVisit        Objective = "เพื่อเยี่ยมชมบรรยากาศภายในมหาวิทยาลัยและสิ่งอำนวยความสะดวก"
-	ObjectiveTalkToAlumni Objective = "เพื่อพูดคุยกับอาจารย์ รุ่นพี่ หรือศิษย์เก่าเกี่ยวกับประสบการณ์การเรียน"
-	OtherObjective        Objective = "อื่น ๆ"
+	LearnAboutFaculties Objective = "learnaboutfaculties"
+	FindMyself          Objective = "findmyself"
+	PrepareForDecision  Objective = "preparefordecision"
+	AskAboutAdmission   Objective = "askaboutadmission"
+	ExploreChula        Objective = "explorechula"
+	TalkToTeachers      Objective = "talktoteachers"
+	OtherObjective      Objective = "other"
 )
 
 var ObjectiveSet = map[Objective]struct{}{
-	ObjectiveWorkshop:     {},
-	ObjectiveCurriculum:   {},
-	ObjectiveSelfExplore:  {},
-	ObjectivePrepare:      {},
-	ObjectiveAdmission:    {},
-	ObjectiveVisit:        {},
-	ObjectiveTalkToAlumni: {},
-	OtherObjective:        {},
+	LearnAboutFaculties: {},
+	FindMyself:          {},
+	PrepareForDecision:  {},
+	AskAboutAdmission:   {},
+	ExploreChula:        {},
+	TalkToTeachers:      {},
+	OtherObjective:      {},
 }
 
 func ObjectiveIsValid(input string) bool {
@@ -284,25 +282,25 @@ func ObjectivesAreValid(input []string) bool {
 type NewsSource string
 
 const (
-	NewsSourceFacebook    NewsSource = "Facebook"
-	NewsSourceInstagram   NewsSource = "Instagram"
-	NewsSourceX           NewsSource = "X"
-	NewsSourceTiktok      NewsSource = "Tiktok"
-	NewsSourceCamphub     NewsSource = "Camphub"
-	NewsSourceBillboard   NewsSource = "ป้ายโฆษณาต่าง ๆ"
-	NewsSourceWordOfMouth NewsSource = "ผู้ปกครอง/คนรู้จัก"
-	OtherNewsSource       NewsSource = "อื่น ๆ"
+	Facebook        NewsSource = "Facebook"
+	Instagram       NewsSource = "Instagram"
+	X               NewsSource = "X"
+	Tiktok          NewsSource = "Tiktok"
+	Camphub         NewsSource = "Camphub"
+	Billboard       NewsSource = "Billboard"
+	WordOfMouth     NewsSource = "WordOfMouth"
+	OtherNewsSource NewsSource = "other"
 )
 
 var NewsSourceSet = map[NewsSource]struct{}{
-	NewsSourceFacebook:    {},
-	NewsSourceInstagram:   {},
-	NewsSourceX:           {},
-	NewsSourceTiktok:      {},
-	NewsSourceCamphub:     {},
-	NewsSourceBillboard:   {},
-	NewsSourceWordOfMouth: {},
-	OtherNewsSource:       {},
+	Facebook:        {},
+	Instagram:       {},
+	X:               {},
+	Tiktok:          {},
+	Camphub:         {},
+	Billboard:       {},
+	WordOfMouth:     {},
+	OtherNewsSource: {},
 }
 
 func NewsSourceIsValid(input string) bool {
@@ -327,45 +325,27 @@ func NewsSourcesAreValid(input []string) bool {
 type StudyLevel string
 
 const (
-	Elementary          StudyLevel = "ประถมศึกษา"
-	Matthayom1          StudyLevel = "มัธยมศึกษาปีที่ 1"
-	Matthayom2          StudyLevel = "มัธยมศึกษาปีที่ 2"
-	Matthayom3          StudyLevel = "มัธยมศึกษาปีที่ 3"
-	Matthayom4          StudyLevel = "มัธยมศึกษาปีที่ 4"
-	Matthayom5          StudyLevel = "มัธยมศึกษาปีที่ 5"
-	Matthayom6          StudyLevel = "มัธยมศึกษาปีที่ 6"
-	Vocational1         StudyLevel = "ปวช. 1"
-	Vocational2         StudyLevel = "ปวช. 2"
-	Vocational3         StudyLevel = "ปวช. 3"
-	HigherVocational1   StudyLevel = "ปวส. 1"
-	HigherVocational2   StudyLevel = "ปวส. 2"
-	HigherEducation     StudyLevel = "อุดมศึกษา"
-	OtherEducation      StudyLevel = "อื่น ๆ"
-	MiddleSchoolGroup   StudyLevel = "มัธยมศึกษาตอนต้น"
-	HighSchoolGroup     StudyLevel = "มัธยมศึกษาตอนปลาย"
-	VocationalGroup     StudyLevel = "ปวช."
-	HighVocationalGroup StudyLevel = "ปวส."
+	Elementary       StudyLevel = "elementary"
+	MatthayomTon     StudyLevel = "matthayom_ton"
+	MatthayomPlai    StudyLevel = "matthayom_plai"
+	Vocational       StudyLevel = "vocational"
+	HigherVocational StudyLevel = "highervocational"
+	Undergraduate    StudyLevel = "undergraduate"
+	Master           StudyLevel = "master"
+	Doctor           StudyLevel = "doctor"
+	OtherEducation   StudyLevel = "other"
 )
 
 var StudyLevelSet = map[StudyLevel]struct{}{
-	Elementary:          {},
-	Matthayom1:          {},
-	Matthayom2:          {},
-	Matthayom3:          {},
-	Matthayom4:          {},
-	Matthayom5:          {},
-	Matthayom6:          {},
-	Vocational1:         {},
-	Vocational2:         {},
-	Vocational3:         {},
-	HigherVocational1:   {},
-	HigherVocational2:   {},
-	HigherEducation:     {},
-	OtherEducation:      {},
-	MiddleSchoolGroup:   {},
-	HighSchoolGroup:     {},
-	VocationalGroup:     {},
-	HighVocationalGroup: {},
+	Elementary:       {},
+	MatthayomTon:     {},
+	MatthayomPlai:    {},
+	Vocational:       {},
+	HigherVocational: {},
+	Undergraduate:    {},
+	Master:           {},
+	Doctor:           {},
+	OtherEducation:   {},
 }
 
 func StudyLevelIsValid(input string) bool {
