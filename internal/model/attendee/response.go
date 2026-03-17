@@ -7,7 +7,7 @@ import (
 )
 
 type AttendeeResponse struct {
-	Age                           int       `json:"age"`
+	DateOfBirth                   string    `json:"date_of_birth"`
 	AttendeeType                  string    `json:"attendee_type"`
 	CertificateName               *string   `json:"certificate_name"`
 	CreatedAt                     time.Time `json:"createdAt"`
