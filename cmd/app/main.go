@@ -65,9 +65,6 @@ func main() {
 	attendeeRepo := repository.NewAttendeeRepository(config.DB)
 	attendeeUsecase := usecase.NewAttendeeUsecase(attendeeRepo, userRepo)
 
-	// Game piece
-	pieceRepo := repository.NewPieceRepository(config.DB)
-
 	// Checkin
 	checkinRepo := repository.NewCheckinRepository(config.DB)
 	checkinUsecase := usecase.NewCheckinUsecase(attendeeRepo, staffRepo, checkinRepo)

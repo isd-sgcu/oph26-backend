@@ -240,7 +240,7 @@ func (u *PieceUsecaseImpl) CollectPiece(c *fiber.Ctx) error {
 	}
 
 	faculty := friendPiece.Attendee.InitialFirstInterestedFaculty
-	if idx, ok := facultyIndex[faculty]; ok {
+	if idx, ok := facultyIndex[string(faculty)]; ok {
 		_ = u.LeaderboardCase.UpdateScore(userID, idx)
 		_ = u.LeaderboardCase.UpdateLeaderboard()
 	}

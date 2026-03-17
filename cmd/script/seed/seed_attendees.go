@@ -33,6 +33,7 @@ func seedAttendees(db *gorm.DB, users []entity.User, staffs []entity.Staff) []en
 			ObjectiveSelected:             pq.StringArray{"explore"},
 			TicketCode:                    "H000001",
 			CheckinStaffID:                &staffs[0].ID,
+			CheckedInAt:                   &checkinTime,
 		},
 		{
 			UserID:                        users[1].ID,
