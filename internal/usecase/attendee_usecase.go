@@ -2,7 +2,6 @@ package usecase
 
 import (
 	"crypto/rand"
-	"errors"
 	"fmt"
 	"math/big"
 	"oph26-backend/internal/entity"
@@ -305,75 +304,86 @@ func (u *AttendeeUsecaseImpl) PostAttendee(c *fiber.Ctx) error {
 	// we are just going to loop until its successfully created
 	retryCount := 5 // exponential backoff???
 
+	var ticketCode string
 	for retryCount > 0 {
 		retryCount -= 1
 
-		ticketCode, ticketCodeErr := u.generateTicketCode(request.AttendeeType)
+		tc, ticketCodeErr := u.generateTicketCode(request.AttendeeType)
 		if ticketCodeErr != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 				"error": "Internal DB error",
 			})
 		}
 
-		attendee := entity.Attendee{
-			UserID:               userId,
-			Firstname:            request.Firstname,
-			Surname:              request.Surname,
-			AttendeeType:         request.AttendeeType,
-			DateOfBirth:          parseDateOfBirthString(request.DateOfBirth),
-			Province:             request.Province,
-			District:             request.District,
-			StudyLevel:           request.StudyLevel,
-			SchoolName:           request.SchoolName,
-			NewsSourceSelected:   request.NewsSourceSelected,
-			NewsSourcesOther:     request.NewsSourcesOther,
-			ObjectiveSelected:    request.ObjectiveSelected,
-			ObjectiveOther:       request.ObjectiveOther,
-			TicketCode:           ticketCode,
-			TransportationMethod: request.TransportationMethod,
-		}
-		if request.InterestedFaculty != nil {
-			attendee.InterestedFaculty = *request.InterestedFaculty
-			first := (*request.InterestedFaculty)[0]
-			attendee.InitialFirstInterestedFaculty = &first
-		}
-
-		found, err2 := u.attendeeRepo.Upsert(&attendee)
-		// TODO: this might need `TranslateError: true`
-		if errors.Is(err2, gorm.ErrDuplicatedKey) {
-			continue
-		}
-		if err2 != nil {
+		existing, err := u.attendeeRepo.FindByTicketCode(tc)
+		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 				"error": "Internal DB error",
 			})
 		}
-		if found {
-			return c.Status(fiber.StatusConflict).JSON(fiber.Map{
-				"error": "Attendee already exists",
-			})
+		if existing == nil {
+			ticketCode = tc
+			break
 		}
+	}
 
-		if request.AttendeeType == "highschool" {
-			myPiece := entity.MyPiece{
-				AttendeeID: attendee.ID,
-				PieceCode:  code,
-				ExpireDate: time.Now().Add(24 * time.Hour),
-			}
-			if err := u.attendeeRepo.CreateMyPieceAndLink(&attendee, &myPiece); err != nil {
-				return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-					"error": "Failed to create MyPiece",
-				})
-			}
-		}
-
-		return c.Status(fiber.StatusOK).JSON(fiber.Map{
-			"ok": true,
+	if ticketCode == "" {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to generate unique ticket code",
 		})
 	}
 
-	return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-		"error": "Failed to generate unique ticket code",
+	attendee := entity.Attendee{
+		UserID:               userId,
+		Firstname:            request.Firstname,
+		Surname:              request.Surname,
+		AttendeeType:         request.AttendeeType,
+		DateOfBirth:          parseDateOfBirthString(request.DateOfBirth),
+		Province:             request.Province,
+		District:             request.District,
+		StudyLevel:           request.StudyLevel,
+		SchoolName:           request.SchoolName,
+		NewsSourceSelected:   request.NewsSourceSelected,
+		NewsSourcesOther:     request.NewsSourcesOther,
+		ObjectiveSelected:    request.ObjectiveSelected,
+		ObjectiveOther:       request.ObjectiveOther,
+		TicketCode:           ticketCode,
+		TransportationMethod: request.TransportationMethod,
+	}
+	if request.InterestedFaculty != nil {
+		attendee.InterestedFaculty = *request.InterestedFaculty
+		first := (*request.InterestedFaculty)[0]
+		attendee.InitialFirstInterestedFaculty = &first
+	}
+
+	found, err2 := u.attendeeRepo.Upsert(&attendee)
+	// TODO: this might need `TranslateError: true`
+	if err2 != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Internal DB error",
+		})
+	}
+	if found {
+		return c.Status(fiber.StatusConflict).JSON(fiber.Map{
+			"error": "Attendee already exists",
+		})
+	}
+
+	if request.AttendeeType == "highschool" {
+		myPiece := entity.MyPiece{
+			AttendeeID: attendee.ID,
+			PieceCode:  code,
+			ExpireDate: time.Now().Add(24 * time.Hour),
+		}
+		if err := u.attendeeRepo.CreateMyPieceAndLink(&attendee, &myPiece); err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": "Failed to create MyPiece",
+			})
+		}
+	}
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"ok": true,
 	})
 }
 
