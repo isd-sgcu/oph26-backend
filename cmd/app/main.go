@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/cors"
 )
 
 func init() {
@@ -21,10 +22,12 @@ func main() {
 	cfg := config.LoadEnv()
 	config.InitDB(cfg)
 
+	allowedOrigins := cfg.AllowOrigins
 	switch cfg.AppEnv {
 	case "production":
 		log.Println("Running in PRODUCTION mode")
 	case "development":
+		allowedOrigins = "*"
 		log.Println("Running in development mode")
 	default:
 		log.Printf("Running in unknown mode: %s\n", cfg.AppEnv)
@@ -32,35 +35,60 @@ func main() {
 
 	r := fiber.New()
 
-	// Init Dependencies
+	r.Use(cors.New(cors.Config{
+		AllowOrigins:     allowedOrigins,
+		AllowMethods:     "GET,POST,PUT,DELETE,OPTIONS",
+		AllowHeaders:     "Origin,Content-Type,Authorization",
+		AllowCredentials: true,
+	}))
+
+	// User & Staff
 	userRepo := repository.NewUserRepository(config.DB)
 	staffRepo := repository.NewStaffRepository(config.DB)
-	refreshTokenRepo := repository.NewRefreshTokenRepository(config.DB)
-	authUsecase := usecase.NewAuthUsecase(userRepo, staffRepo, refreshTokenRepo, cfg.GoogleClientID, cfg.JWTSecret, cfg.AppEnv)
-
-	pieceRepo := repository.NewPieceRepository(config.DB)
 	userUsecase := usecase.NewUserUsecase(userRepo)
+
+	// Auth
+	refreshTokenRepo := repository.NewRefreshTokenRepository(config.DB)
+	authUsecase := usecase.NewAuthUsecase(usecase.AuthUsecaseConfig{
+		UserRepository:         userRepo,
+		StaffRepository:        staffRepo,
+		RefreshTokenRepository: refreshTokenRepo,
+		GoogleClientID:         cfg.GoogleClientID,
+		JWTSecret:              cfg.JWTSecret,
+		AppEnv:                 cfg.AppEnv,
+	})
+
+	// Attendee
 	attendeeRepo := repository.NewAttendeeRepository(config.DB)
 	attendeeUsecase := usecase.NewAttendeeUsecase(attendeeRepo, userRepo)
+
+	// Game piece
+	pieceRepo := repository.NewPieceRepository(config.DB)
 	pieceUsecase := usecase.NewPieceUsecase(pieceRepo)
 
+	// Checkin
+	checkinRepo := repository.NewCheckinRepository(config.DB)
+	checkinUsecase := usecase.NewCheckinUsecase(attendeeRepo, staffRepo, checkinRepo)
+
+	// Leaderboard
 	leaderboardRepo := repository.NewLeaderboardRepository(config.DB)
 	scoreRepo := repository.NewScoreRepository(config.DB)
 	leaderboardUsecase := usecase.NewLeaderboardUsecase(leaderboardRepo, scoreRepo)
 
 	// Init Middleware
 	authMiddleware := middleware.NewAuthMiddleware(cfg.JWTSecret)
-	rateLimitMiddleWare := middleware.RateLimitMiddleware(100000000, time.Minute) // 10 requests per minute
+	rateLimitMiddleware := middleware.RateLimitMiddleware(10, time.Minute) // 10 requests per minute
 
 	route.SetupRoutes(r, route.RouteConfig{
 		AuthUsecase:         authUsecase,
 		AttendeeUsecase:     attendeeUsecase,
+		CheckinUsecase:      checkinUsecase,
 		AuthMiddleware:      authMiddleware,
 		UserUsecase:         userUsecase,
 		PieceUsecase:        pieceUsecase,
+		RateLimitMiddleware: rateLimitMiddleware,
 		LeaderboardUsecase:  leaderboardUsecase,
-		RateLimitMiddleware: rateLimitMiddleWare,
 	})
 
-	log.Fatal(r.Listen(":8080"))
+	log.Fatal(r.Listen(":" + cfg.Port))
 }

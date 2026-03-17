@@ -24,7 +24,11 @@ This backend is built using [Go](https://go.dev/) and [Fiber](https://gofiber.io
 
 4. Run the application:
    ```bash
-   go run main.go
+   go run ./cmd/app/main.go
+   ```
+5. Run the seed:
+   ```bash
+   go run ./cmd/script/seed/
    ```
 
 ### Mocking Google Token Validation in Development

@@ -109,8 +109,6 @@ func (u *AttendeeUsecaseImpl) GetMyAttendee(c *fiber.Ctx) error {
 		DateOfBirth:                   formatDateOfBirth(attendee.DateOfBirth),
 		AttendeeType:                  attendee.AttendeeType,
 		CertificateName:               attendee.CertificateName,
-		CheckedInAt:                   attendee.CheckedInAt,
-		CheckinStaffID:                attendee.CheckinStaffID,
 		CreatedAt:                     attendee.CreatedAt,
 		FavoriteWorkshops:             attendee.FavoriteWorkshops.ToSlice(),
 		Firstname:                     attendee.Firstname,
