@@ -25,8 +25,8 @@ type AttendeeResponse struct {
 	ObjectiveSelected             []string        `json:"objective_selected"`
 	Province                      string          `json:"province"`
 	District                      string          `json:"district"`
-	SchoolName                    *string         `json:"school_name"`
-	StudyLevel                    *string         `json:"study_level"`
+	SchoolName                    *string          `json:"school_name"`
+	StudyLevel                    *model.StudyLevel `json:"study_level"`
 	Surname                       string          `json:"surname"`
 	TicketCode                    string          `json:"ticket_code"`
 	UpdatedAt                     time.Time       `json:"updatedAt"`

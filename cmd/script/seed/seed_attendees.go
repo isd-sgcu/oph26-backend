@@ -15,6 +15,7 @@ import (
 // attendees[2] is a parent.
 func seedAttendees(db *gorm.DB, users []entity.User, staffs []entity.Staff) []entity.Attendee {
 	checkinTime := time.Now()
+	matthayomPlai := model.MatthayomPlai
 
 	attendees := []entity.Attendee{
 		{
@@ -24,7 +25,7 @@ func seedAttendees(db *gorm.DB, users []entity.User, staffs []entity.Staff) []en
 			AttendeeType:                  "student",
 			DateOfBirth:                   time.Date(2009, 3, 17, 0, 0, 0, 0, time.UTC),
 			Province:                      "กรุงเทพมหานคร",
-			StudyLevel:                    strPtr("มัธยมศึกษาปีที่ 5"),
+			StudyLevel:                    &matthayomPlai,
 			SchoolName:                    strPtr("โรงเรียนสาธิตจุฬาฯ"),
 			NewsSourceSelected:            pq.StringArray{"facebook", "line"},
 			InitialFirstInterestedFaculty: model.ENG,
@@ -41,7 +42,7 @@ func seedAttendees(db *gorm.DB, users []entity.User, staffs []entity.Staff) []en
 			AttendeeType:                  "student",
 			DateOfBirth:                   time.Date(2010, 3, 17, 0, 0, 0, 0, time.UTC),
 			Province:                      "เชียงใหม่",
-			StudyLevel:                    strPtr("มัธยมศึกษาปีที่ 4"),
+			StudyLevel:                    &matthayomPlai,
 			SchoolName:                    strPtr("โรงเรียนยุพราชวิทยาลัย"),
 			NewsSourceSelected:            pq.StringArray{"instagram"},
 			InitialFirstInterestedFaculty: model.MD,
