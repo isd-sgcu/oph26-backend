@@ -4,6 +4,8 @@ import (
 	"database/sql/driver"
 	"time"
 
+	"oph26-backend/internal/model"
+
 	"github.com/google/uuid"
 
 	"github.com/lib/pq"
@@ -23,8 +25,8 @@ type Attendee struct {
 	SchoolName                    *string        `gorm:"type:text"`
 	NewsSourceSelected            pq.StringArray `gorm:"type:text[]"`
 	NewsSourcesOther              *string        `gorm:"type:text"`
-	InitialFirstInterestedFaculty *string        `gorm:"type:text"`
-	InterestedFaculty             pq.StringArray `gorm:"type:text[]"`
+	InitialFirstInterestedFaculty model.Faculty `gorm:"type:text"`
+	InterestedFaculty             []model.Faculty `gorm:"type:text[]"`
 	ObjectiveSelected             pq.StringArray `gorm:"type:text[]"`
 	ObjectiveOther                *string        `gorm:"type:text"`
 	TicketCode                    string         `gorm:"type:char(7);not null;uniqueIndex"`

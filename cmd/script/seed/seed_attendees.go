@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"oph26-backend/internal/entity"
+	"oph26-backend/internal/model"
 	"time"
 
 	"github.com/lib/pq"
@@ -21,13 +22,13 @@ func seedAttendees(db *gorm.DB, users []entity.User, staffs []entity.Staff) []en
 			Firstname:                     "นภา",
 			Surname:                       "ดาวเรือง",
 			AttendeeType:                  "highschool",
-			Age:                           17,
+			DateOfBirth:                   time.Date(2009, 3, 17, 0, 0, 0, 0, time.UTC),
 			Province:                      "กรุงเทพมหานคร",
 			StudyLevel:                    strPtr("มัธยมศึกษาปีที่ 5"),
 			SchoolName:                    strPtr("โรงเรียนสาธิตจุฬาฯ"),
 			NewsSourceSelected:            pq.StringArray{"facebook", "line"},
-			InitialFirstInterestedFaculty: "eng",
-			InterestedFaculty:             pq.StringArray{"eng", "sci"},
+			InitialFirstInterestedFaculty: model.ENG,
+			InterestedFaculty:             []model.Faculty{model.ENG, model.SCI},
 			ObjectiveSelected:             pq.StringArray{"explore"},
 			TicketCode:                    "H000001",
 			CheckinStaffID:                &staffs[0].ID,
@@ -38,13 +39,13 @@ func seedAttendees(db *gorm.DB, users []entity.User, staffs []entity.Staff) []en
 			Firstname:                     "ธนา",
 			Surname:                       "วิชาการ",
 			AttendeeType:                  "highschool",
-			Age:                           16,
+			DateOfBirth:                   time.Date(2010, 3, 17, 0, 0, 0, 0, time.UTC),
 			Province:                      "เชียงใหม่",
 			StudyLevel:                    strPtr("มัธยมศึกษาปีที่ 4"),
 			SchoolName:                    strPtr("โรงเรียนยุพราชวิทยาลัย"),
 			NewsSourceSelected:            pq.StringArray{"instagram"},
-			InitialFirstInterestedFaculty: "md",
-			InterestedFaculty:             pq.StringArray{"md", "pharm"},
+			InitialFirstInterestedFaculty: model.MD,
+			InterestedFaculty:             []model.Faculty{model.MD, model.PHARM},
 			ObjectiveSelected:             pq.StringArray{"explore"},
 			TicketCode:                    "H000002",
 		},
@@ -53,10 +54,10 @@ func seedAttendees(db *gorm.DB, users []entity.User, staffs []entity.Staff) []en
 			Firstname:                     "มานี",
 			Surname:                       "กุลดี",
 			AttendeeType:                  "parent",
-			Age:                           45,
+			DateOfBirth:                   time.Date(1981, 3, 17, 0, 0, 0, 0, time.UTC),
 			Province:                      "ขอนแก่น",
-			InitialFirstInterestedFaculty: "law",
-			InterestedFaculty:             pq.StringArray{"law", "arts"},
+			InitialFirstInterestedFaculty: model.LAW,
+			InterestedFaculty:             []model.Faculty{model.LAW, model.ARTS},
 			ObjectiveSelected:             pq.StringArray{"explore"},
 			TicketCode:                    "P000001",
 		},
