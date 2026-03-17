@@ -375,7 +375,7 @@ func (u *AttendeeUsecaseImpl) PostAttendee(c *fiber.Ctx) error {
 		})
 	}
 
-	if request.AttendeeType == "highschool" {
+	if request.AttendeeType == "student" {
 		myPiece := entity.MyPiece{
 			AttendeeID: attendee.ID,
 			PieceCode:  code,
