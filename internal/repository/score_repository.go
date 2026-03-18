@@ -32,7 +32,15 @@ func (r *ScoreRepositoryImpl) IncrementCountByIndex(userID uuid.UUID, index int)
 	}
 
 	column := fmt.Sprintf("count%d", index)
-	return r.DB.Model(&entity.Score{}).Where("user_id = ?", userID).Update(column, gorm.Expr(column+" + 1")).Error
+	tx := r.DB.Model(&entity.Score{}).Where("user_id = ?", userID).Update(column, gorm.Expr(column+" + 1"))
+	if tx.Error != nil {
+		return tx.Error
+	}
+	if tx.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
+	}
+
+	return nil
 }
 
 func (r *ScoreRepositoryImpl) Count() (int, error) {
