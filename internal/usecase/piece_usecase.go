@@ -28,10 +28,11 @@ type PieceUsecase interface {
 type PieceUsecaseImpl struct {
 	PieceRepo       repository.PieceRepository
 	LeaderboardCase LeaderboardUsecase
+	ScoreRepo       repository.ScoreRepository
 	validate        *validator.Validate
 }
 
-func NewPieceUsecase(pieceRepo repository.PieceRepository, leaderboardUsecase LeaderboardUsecase) PieceUsecase {
+func NewPieceUsecase(pieceRepo repository.PieceRepository, leaderboardUsecase LeaderboardUsecase, scoreRepo repository.ScoreRepository) PieceUsecase {
 	return &PieceUsecaseImpl{
 		PieceRepo:       pieceRepo,
 		LeaderboardCase: leaderboardUsecase,
@@ -266,9 +267,15 @@ func (u *PieceUsecaseImpl) CollectPiece(c *fiber.Ctx) error {
 	}
 
 	faculty := friendPiece.Attendee.InitialFirstInterestedFaculty
-	if idx, ok := facultyIndex[string(faculty)]; ok {
-		_ = u.LeaderboardCase.UpdateScore(userID, idx)
-		_ = u.LeaderboardCase.UpdateLeaderboard()
+	idx, ok := facultyIndex[string(faculty)]
+	if !ok {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "unknown faculty",
+		})
+	}
+
+	if err := u.ScoreRepo.IncrementCountByIndex(userID, idx); err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
 
 	return c.JSON(pieceModel.CollectPieceResponse{

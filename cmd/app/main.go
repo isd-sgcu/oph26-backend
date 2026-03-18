@@ -63,9 +63,9 @@ func main() {
 	// Checkin
 	userUsecase := usecase.NewUserUsecase(userRepo)
 	checkinUsecase := usecase.NewCheckinUsecase(attendeeRepo, staffRepo, checkinRepo)
-	attendeeUsecase := usecase.NewAttendeeUsecase(attendeeRepo, userRepo, leaderboardRepo)
+	attendeeUsecase := usecase.NewAttendeeUsecase(attendeeRepo, userRepo, leaderboardRepo, scoreRepo)
 	leaderboardUsecase := usecase.NewLeaderboardUsecase(leaderboardRepo, scoreRepo)
-	pieceUsecase := usecase.NewPieceUsecase(pieceRepo, leaderboardUsecase)
+	pieceUsecase := usecase.NewPieceUsecase(pieceRepo, leaderboardUsecase, scoreRepo)
 
 	// Init Middleware
 	authMiddleware := middleware.NewAuthMiddleware(cfg.JWTSecret)

@@ -49,7 +49,30 @@ func (r *LeaderboardRepositoryImpl) UpdateIsTop() error {
 		FROM (
 			SELECT
 				i,
-				percentile_disc(0.99) WITHIN GROUP (ORDER BY s."count"[i]) AS threshold
+				percentile_disc(0.99) WITHIN GROUP (ORDER BY 
+					CASE i
+						WHEN 1 THEN s.count1
+						WHEN 2 THEN s.count2
+						WHEN 3 THEN s.count3
+						WHEN 4 THEN s.count4
+						WHEN 5 THEN s.count5
+						WHEN 6 THEN s.count6
+						WHEN 7 THEN s.count7
+						WHEN 8 THEN s.count8
+						WHEN 9 THEN s.count9
+						WHEN 10 THEN s.count10
+						WHEN 11 THEN s.count11
+						WHEN 12 THEN s.count12
+						WHEN 13 THEN s.count13
+						WHEN 14 THEN s.count14
+						WHEN 15 THEN s.count15
+						WHEN 16 THEN s.count16
+						WHEN 17 THEN s.count17
+						WHEN 18 THEN s.count18
+						WHEN 19 THEN s.count19
+						WHEN 20 THEN s.count20
+					END
+				) AS threshold
 			FROM scores s
 			CROSS JOIN generate_series(1,20) AS i
 			GROUP BY i
@@ -59,13 +82,57 @@ func (r *LeaderboardRepositoryImpl) UpdateIsTop() error {
 		SELECT
 			user_id,
 			ARRAY(
-				SELECT s."count"[gs] >= t.t[gs]
+				SELECT 
+					CASE gs
+						WHEN 1 THEN s.count1
+						WHEN 2 THEN s.count2
+						WHEN 3 THEN s.count3
+						WHEN 4 THEN s.count4
+						WHEN 5 THEN s.count5
+						WHEN 6 THEN s.count6
+						WHEN 7 THEN s.count7
+						WHEN 8 THEN s.count8
+						WHEN 9 THEN s.count9
+						WHEN 10 THEN s.count10
+						WHEN 11 THEN s.count11
+						WHEN 12 THEN s.count12
+						WHEN 13 THEN s.count13
+						WHEN 14 THEN s.count14
+						WHEN 15 THEN s.count15
+						WHEN 16 THEN s.count16
+						WHEN 17 THEN s.count17
+						WHEN 18 THEN s.count18
+						WHEN 19 THEN s.count19
+						WHEN 20 THEN s.count20
+					END >= t.t[gs]
 				FROM generate_series(1,20) AS gs
 			) AS is_top
 		FROM scores s, thresholds t
 		WHERE EXISTS (
 			SELECT 1 FROM generate_series(1,20) gs
-			WHERE s."count"[gs] >= t.t[gs]
+			WHERE 
+				CASE gs
+					WHEN 1 THEN s.count1
+					WHEN 2 THEN s.count2
+					WHEN 3 THEN s.count3
+					WHEN 4 THEN s.count4
+					WHEN 5 THEN s.count5
+					WHEN 6 THEN s.count6
+					WHEN 7 THEN s.count7
+					WHEN 8 THEN s.count8
+					WHEN 9 THEN s.count9
+					WHEN 10 THEN s.count10
+					WHEN 11 THEN s.count11
+					WHEN 12 THEN s.count12
+					WHEN 13 THEN s.count13
+					WHEN 14 THEN s.count14
+					WHEN 15 THEN s.count15
+					WHEN 16 THEN s.count16
+					WHEN 17 THEN s.count17
+					WHEN 18 THEN s.count18
+					WHEN 19 THEN s.count19
+					WHEN 20 THEN s.count20
+				END >= t.t[gs]
 		)
 	)
 	UPDATE leaderboards l

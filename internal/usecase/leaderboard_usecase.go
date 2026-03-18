@@ -15,8 +15,6 @@ type LeaderboardUsecaseImpl struct {
 
 type LeaderboardUsecase interface {
 	GetMyLeaderboard(c *fiber.Ctx) error
-	UpdateScore(userID uuid.UUID, facultyIndex int) error
-	UpdateLeaderboard() error
 }
 
 func NewLeaderboardUsecase(leaderboardRepository repository.LeaderboardRepository, scoreRepository repository.ScoreRepository) LeaderboardUsecase {
@@ -47,12 +45,4 @@ func (u *LeaderboardUsecaseImpl) GetMyLeaderboard(c *fiber.Ctx) error {
 	return c.JSON(&model.LeaderboardResponse{
 		IsTop: leaderboard.IsTop,
 	})
-}
-
-func (u *LeaderboardUsecaseImpl) UpdateScore(userID uuid.UUID, facultyIndex int) error {
-	return u.scoreRepo.IncrementCountByIndex(userID, facultyIndex)
-}
-
-func (u *LeaderboardUsecaseImpl) UpdateLeaderboard() error {
-	return u.leaderboardRepo.UpdateIsTop()
 }
