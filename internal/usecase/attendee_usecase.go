@@ -799,6 +799,5 @@ func (u *AttendeeUsecaseImpl) GenerateLeaderboard(user entity.User) entity.Leade
 func (u *AttendeeUsecaseImpl) GenerateScore(user entity.User) entity.Score {
 	return entity.Score{
 		UserID: user.ID,
-		User:   user,
 	}
 }
