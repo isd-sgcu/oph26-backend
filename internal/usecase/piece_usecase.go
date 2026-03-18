@@ -265,13 +265,21 @@ func (u *PieceUsecaseImpl) CollectPiece(c *fiber.Ctx) error {
 	if err := u.PieceRepo.CreateCollectedPiece(&cp); err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
-	u.ScoreRepo.IncrementCountByIndex(userID, facultyIndex[string(friendPiece.Attendee.InitialFirstInterestedFaculty)])
+
 	faculty := friendPiece.Attendee.InitialFirstInterestedFaculty
-	if idx, ok := facultyIndex[string(faculty)]; ok {
-		_ = u.LeaderboardCase.UpdateScore(userID, idx)
-		_ = u.LeaderboardCase.UpdateLeaderboard()
+	idx, ok := facultyIndex[string(faculty)]
+	if !ok {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "unknown faculty",
+		})
 	}
-	
+
+	if err := u.LeaderboardCase.UpdateScore(userID, idx); err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	}
+	if err := u.LeaderboardCase.UpdateLeaderboard(); err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	}
 
 	return c.JSON(pieceModel.CollectPieceResponse{
 		Ok: true,
