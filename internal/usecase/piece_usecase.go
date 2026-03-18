@@ -274,10 +274,7 @@ func (u *PieceUsecaseImpl) CollectPiece(c *fiber.Ctx) error {
 		})
 	}
 
-	if err := u.LeaderboardCase.UpdateScore(userID, idx); err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
-	}
-	if err := u.LeaderboardCase.UpdateLeaderboard(); err != nil {
+	if err := u.ScoreRepo.IncrementCountByIndex(userID, idx); err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
 
