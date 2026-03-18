@@ -12,6 +12,4 @@ type CollectedPiece struct {
 	Attendee    Attendee  `gorm:"foreignKey:AttendeeID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
 	MyPiece     MyPiece   `gorm:"foreignKey:PieceID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
 	CollectedAt time.Time `gorm:"not null"`
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
 }

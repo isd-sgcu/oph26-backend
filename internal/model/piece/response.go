@@ -1,24 +1,25 @@
 package piece
 
 import (
+	"oph26-backend/internal/model"
 	"time"
 
 	"github.com/google/uuid"
 )
 
 type MyPieceResponse struct {
-	ID         uuid.UUID `json:"id"`
-	UserID     uuid.UUID `json:"user_id"`
-	PieceCode  string    `json:"piece_code"`
-	ExpireDate time.Time `json:"expire_date"`
-	Faculty    string    `json:"faculty"`
+	ID         uuid.UUID     `json:"id"`
+	UserID     uuid.UUID     `json:"user_id"`
+	PieceCode  string        `json:"piece_code"`
+	ExpireDate time.Time     `json:"expire_date"`
+	Faculty    model.Faculty `json:"faculty"`
 }
 
 type FriendPieceResponse struct {
-	ID          uuid.UUID  `json:"id"`
-	UserID      uuid.UUID  `json:"user_id"`
-	Faculty     string     `json:"faculty"`
-	CollectedAt *time.Time `json:"collected_at,omitempty"`
+	ID          uuid.UUID     `json:"id"`
+	UserID      uuid.UUID     `json:"user_id"`
+	Faculty     model.Faculty `json:"faculty"`
+	CollectedAt *time.Time    `json:"collected_at,omitempty"`
 }
 
 type FacultyStats struct {
@@ -34,4 +35,13 @@ type CollectedPiecesStats struct {
 type CollectedPiecesResponse struct {
 	CollectedPieces []FriendPieceResponse `json:"collected_pieces"`
 	Stats           CollectedPiecesStats  `json:"stats"`
+}
+
+type CollectPieceRequest struct {
+	PieceCode string `json:"piece_code" validate:"required"`
+}
+
+type CollectPieceResponse struct {
+	Ok             bool                `json:"ok"`
+	CollectedPiece FriendPieceResponse `json:"collected_piece"`
 }

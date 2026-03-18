@@ -154,6 +154,66 @@ paths:
       summary: อัปเดตข้อมูลผู้เข้าร่วมงาน
       tags:
         - Attendees
+  /attendees/me/certificate_name:
+    put:
+      description: >-
+        อัปเดตชื่อสำหรับพิมพ์ในใบเกียรติบัตรของผู้เข้าร่วมงาน
+        (เฉพาะผู้ใช้ที่ไม่ใช่สตาฟเท่านั้น)
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateCertificateNameRequest"
+      responses:
+        "200":
+          content:
+            application/json:
+              example:
+                ok: true
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+          description: Updated
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: Bad Request, invalid input data
+        "401":
+          $ref: "#/components/responses/UnauthorizedResponse"
+        "403":
+          content:
+            application/json:
+              examples:
+                StaffAccountForbiddenExample:
+                  description: >-
+                    ตัวอย่างการตอบกลับเมื่อสตาฟพยายามอัปเดตชื่อในใบเกียรติบัตรของตัวเอง
+                  summary: Staff Account Forbidden Example
+                  value:
+                    error: Forbidden, staff accounts cannot update certificate name
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: >-
+            Forbidden, user does not have permission to update certificate name
+            (might be a staff account)
+        "404":
+          content:
+            application/json:
+              examples:
+                AttendeeNotCreatedYet:
+                  description: >-
+                    ตัวอย่างการตอบกลับเมื่อผู้ใช้ที่ล็อกอินยังไม่มีข้อมูลผู้เข้าร่วมงาน
+                  summary: Attendee Not Created Yet Example
+                  value:
+                    error: Attendee data not found for the current user
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: Not Found, attendee data for the current user does not exist
+      summary: อัปเดตชื่อสำหรับพิมพ์ในใบเกียรติบัตร
+      security:
+        - bearerAuth: []
+      tags:
+        - Attendees
   /attendees/{attendeeId}:
     get:
       description: ดึงข้อมูลผู้เข้าร่วมงานตาม ID เฉพาะสตาฟ
@@ -169,13 +229,7 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: "#/components/schemas/Attendee"
-                  - properties:
-                      checkin_staff:
-                        $ref: "#/components/schemas/Staff"
-                        description: ข้อมูลสตาฟที่ทำการเช็คอินให้ผู้เข้าร่วมงาน (ถ้ามี)
-                    type: object
+                $ref: "#/components/schemas/Attendee"
           description: OK
         "401":
           $ref: "#/components/responses/UnauthorizedResponse"
@@ -463,10 +517,19 @@ paths:
               schema:
                 allOf:
                   - $ref: "#/components/schemas/ErrorResponse"
-                  - properties:
-                      attendee:
-                        $ref: "#/components/schemas/Attendee"
-                        description: ข้อมูลผู้เข้าร่วมงานที่พยายามเช็คอินซ้ำคณะ
+                  - type: object
+                    properties:
+                      checkin:
+                        allOf:
+                          - $ref: "#/components/schemas/Checkin"
+                          - type: object
+                            properties:
+                              attendee:
+                                $ref: "#/components/schemas/Attendee"
+                                description: ข้อมูลผู้เข้าร่วมงานที่พยายามเช็คอินซ้ำคณะ
+                              staff:
+                                $ref: "#/components/schemas/Staff"
+                                description: ข้อมูลสตาฟที่ทำการเช็คอินให้ผู้เข้าร่วมงานในครั้งแรก
         "500":
           $ref: "#/components/responses/InternalServerErrorResponse"
       tags:
@@ -859,7 +922,7 @@ components:
         - firstname
         - surname
         - attendee_type
-        - age
+        - date_of_birth
         - province
         - district
         - news_sources_selected
@@ -930,6 +993,7 @@ components:
         - surname
         - attendee_type
         - province
+        - date_of_birth
         - district
         - news_sources_selected
         - objective_selected
@@ -1097,9 +1161,34 @@ components:
           $ref: "#/components/schemas/TransportationMethodEnum"
           description: วิธีการเดินทางมางาน
       type: object
+    Checkin:
+      description: รายการเช็คอินของผู้เข้าร่วมงาน
+      properties:
+        id:
+          description: UUID ของรายการเช็คอิน
+          format: uuid
+          type: string
+        attendee_id:
+          $ref: "#/components/schemas/AttendeeID"
+          description: UUID ของผู้เข้าร่วมงานที่ถูกเช็คอิน
+        faculty:
+          $ref: "#/components/schemas/FacultyEnum"
+          description: คณะของสตาฟที่เป็นผู้เช็คอินให้
+        checked_in_at:
+          description: วันที่และเวลาที่ผู้เข้าร่วมงานถูกเช็คอินที่คณะ
+          format: date-time
+          type: string
+        staff_id:
+          $ref: "#/components/schemas/StaffID"
+          description: UUID ของสตาฟที่ทำการเช็คอินให้ผู้เข้าร่วมงาน
+      type: object
     DateOfBirth:
       description: วันเดือนปีเกิดของผู้เข้าร่วมงาน
       format: date
+      examples:
+        - 2005-12-31
+        - 1990-01-01
+        - 2000-06-15
       type: string
     District:
       description: อำเภอของผู้เข้าร่วมงาน
@@ -1565,6 +1654,18 @@ components:
         - เดิน
         - รถจักรยานยนต์
         - รถยนต์ส่วนตัว
+    UpdateCertificateNameRequest:
+      description: อัปเดตชื่อสำหรับพิมพ์ในใบเกียรติบัตรของผู้เข้าร่วมงาน
+      properties:
+        fullname:
+          description: ชื่อสำหรับพิมพ์ในใบเกียรติบัตร มีหรือไม่มีคำนำหน้าแล้วแต่ผู้ใช้จะกรอก
+          type: string
+          examples:
+            - นายสมชาย ใจดี
+            - Miss Ada Lovelace
+      required:
+        - fullname
+      type: object
     User:
       properties:
         attendeeId:

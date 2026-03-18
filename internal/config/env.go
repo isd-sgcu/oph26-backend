@@ -9,14 +9,19 @@ type Config struct {
 	JWTSecret      string
 	GoogleClientID string
 	AppEnv         string
+	Port           string
+	AllowOrigins   string
 }
 
 func LoadEnv() *Config {
 	return &Config{
+		AppEnv:       getEnv("APP_ENV", "development"),
+		Port:         getEnv("PORT", "8080"),
+		AllowOrigins: getEnv("ALLOW_ORIGINS", "http://localhost:3000"),
+
 		DataBaseURL:    getEnv("DATABASE_URL", ""),
 		JWTSecret:      getEnv("JWT_SECRET", "secret"),
 		GoogleClientID: getEnv("GOOGLE_CLIENT_ID", ""),
-		AppEnv:         getEnv("APP_ENV", "development"),
 	}
 }
 

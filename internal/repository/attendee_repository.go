@@ -51,7 +51,7 @@ func (r *AttendeeRepositoryImpl) FindByTicketCode(ticketCode string) (*entity.At
 	return &attendee, nil
 }
 
-func (r *AttendeeRepositoryImpl) Upsert(attendee *entity.Attendee) (founded bool, err error) {
+func (r *AttendeeRepositoryImpl) Upsert(attendee *entity.Attendee) (found bool, err error) {
 	result := r.DB.Where("user_id = ?", attendee.UserID).FirstOrCreate(attendee)
 	return result.RowsAffected == 0, result.Error
 }

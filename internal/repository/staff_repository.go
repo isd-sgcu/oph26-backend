@@ -4,11 +4,12 @@ import (
 	"errors"
 	"oph26-backend/internal/entity"
 
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
 type StaffRepository interface {
-	FindByUserID(userID *string) (*entity.Staff, error)
+	FindByUserID(userID uuid.UUID) (*entity.Staff, error)
 	FindByEmail(email string) (*entity.Staff, error)
 	Create(staff *entity.Staff) error
 	Update(staff *entity.Staff) error
@@ -22,7 +23,7 @@ func NewStaffRepository(db *gorm.DB) StaffRepository {
 	return &StaffRepositoryImpl{DB: db}
 }
 
-func (r *StaffRepositoryImpl) FindByUserID(userID *string) (*entity.Staff, error) {
+func (r *StaffRepositoryImpl) FindByUserID(userID uuid.UUID) (*entity.Staff, error) {
 	var staff entity.Staff
 	if err := r.DB.Where("user_id = ?", userID).First(&staff).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {

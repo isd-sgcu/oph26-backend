@@ -13,7 +13,10 @@ type PieceRepository interface {
 	FindAttendeeByUserID(userID uuid.UUID) (*entity.Attendee, error)
 	FindMyPieceByAttendeeID(attendeeID uuid.UUID) (*entity.MyPiece, error)
 	RefreshMyPiece(piece *entity.MyPiece, newCode string) error
+	FindMyPieceByCode(pieceCode string) (*entity.MyPiece, error)
 	FindCollectedPiecesByAttendeeID(attendeeID uuid.UUID) ([]entity.CollectedPiece, error)
+	FindCollectedPiece(attendeeID uuid.UUID, pieceID uuid.UUID) (*entity.CollectedPiece, error)
+	CreateCollectedPiece(cp *entity.CollectedPiece) error
 	CountCollectedByFaculty(attendeeID uuid.UUID) (map[string]int, error)
 	CountTop1ThresholdByFaculty() (map[string]int, error)
 }
@@ -60,6 +63,32 @@ func (r *PieceRepositoryImpl) RefreshMyPiece(piece *entity.MyPiece, newCode stri
 	piece.PieceCode = newCode
 	piece.ExpireDate = newExpireDate
 	return nil
+}
+  
+func (r *PieceRepositoryImpl) FindMyPieceByCode(pieceCode string) (*entity.MyPiece, error) {
+	var piece entity.MyPiece
+	if err := r.DB.Preload("Attendee").Where("piece_code = ?", pieceCode).First(&piece).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &piece, nil
+}
+
+func (r *PieceRepositoryImpl) FindCollectedPiece(attendeeID uuid.UUID, pieceID uuid.UUID) (*entity.CollectedPiece, error) {
+	var cp entity.CollectedPiece
+	if err := r.DB.Where("attendee_id = ? AND piece_id = ?", attendeeID, pieceID).First(&cp).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &cp, nil
+}
+
+func (r *PieceRepositoryImpl) CreateCollectedPiece(cp *entity.CollectedPiece) error {
+	return r.DB.Create(cp).Error
 }
 
 func (r *PieceRepositoryImpl) FindCollectedPiecesByAttendeeID(attendeeID uuid.UUID) ([]entity.CollectedPiece, error) {

@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/cors"
 )
 
 func init() {
@@ -32,30 +33,54 @@ func main() {
 
 	r := fiber.New()
 
-	// Init Dependencies
+	r.Use(cors.New(cors.Config{
+		AllowOrigins:     cfg.AllowOrigins,
+		AllowMethods:     "GET,POST,PUT,DELETE,OPTIONS",
+		AllowHeaders:     "Origin,Content-Type,Authorization",
+		AllowCredentials: true,
+	}))
+
+	// User & Staff
 	userRepo := repository.NewUserRepository(config.DB)
 	staffRepo := repository.NewStaffRepository(config.DB)
+	// Auth
 	refreshTokenRepo := repository.NewRefreshTokenRepository(config.DB)
-	authUsecase := usecase.NewAuthUsecase(userRepo, staffRepo, refreshTokenRepo, cfg.GoogleClientID, cfg.JWTSecret, cfg.AppEnv)
+	authUsecase := usecase.NewAuthUsecase(usecase.AuthUsecaseConfig{
+		UserRepository:         userRepo,
+		StaffRepository:        staffRepo,
+		RefreshTokenRepository: refreshTokenRepo,
+		GoogleClientID:         cfg.GoogleClientID,
+		JWTSecret:              cfg.JWTSecret,
+		AppEnv:                 cfg.AppEnv,
+	})
 
-	pieceRepo := repository.NewPieceRepository(config.DB)
-	userUsecase := usecase.NewUserUsecase(userRepo)
+	// Attendee
 	attendeeRepo := repository.NewAttendeeRepository(config.DB)
-	attendeeUsecase := usecase.NewAttendeeUsecase(attendeeRepo, userRepo)
-	pieceUsecase := usecase.NewPieceUsecase(pieceRepo)
+	leaderboardRepo := repository.NewLeaderboardRepository(config.DB)
+	scoreRepo := repository.NewScoreRepository(config.DB)
+	pieceRepo := repository.NewPieceRepository(config.DB)
+	checkinRepo := repository.NewCheckinRepository(config.DB)
+	// Checkin
+	userUsecase := usecase.NewUserUsecase(userRepo)
+	checkinUsecase := usecase.NewCheckinUsecase(attendeeRepo, staffRepo, checkinRepo)
+	attendeeUsecase := usecase.NewAttendeeUsecase(attendeeRepo, userRepo, leaderboardRepo)
+	leaderboardUsecase := usecase.NewLeaderboardUsecase(leaderboardRepo, scoreRepo)
+	pieceUsecase := usecase.NewPieceUsecase(pieceRepo, leaderboardUsecase)
 
 	// Init Middleware
 	authMiddleware := middleware.NewAuthMiddleware(cfg.JWTSecret)
-	rateLimitMiddleWare := middleware.RateLimitMiddleware(10, time.Minute) // 10 requests per minute
+	rateLimitMiddleware := middleware.RateLimitMiddleware(10, time.Minute) // 10 requests per minute
 
 	route.SetupRoutes(r, route.RouteConfig{
 		AuthUsecase:         authUsecase,
 		AttendeeUsecase:     attendeeUsecase,
+		CheckinUsecase:      checkinUsecase,
 		AuthMiddleware:      authMiddleware,
 		UserUsecase:         userUsecase,
 		PieceUsecase:        pieceUsecase,
-		RateLimitMiddleware: rateLimitMiddleWare,
+		RateLimitMiddleware: rateLimitMiddleware,
+		LeaderboardUsecase:  leaderboardUsecase,
 	})
 
-	log.Fatal(r.Listen(":8080"))
+	log.Fatal(r.Listen(":" + cfg.Port))
 }
