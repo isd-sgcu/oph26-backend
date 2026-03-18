@@ -3,6 +3,7 @@ package repository
 import (
 	"errors"
 	"oph26-backend/internal/entity"
+	"time"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -11,6 +12,7 @@ import (
 type PieceRepository interface {
 	FindAttendeeByUserID(userID uuid.UUID) (*entity.Attendee, error)
 	FindMyPieceByAttendeeID(attendeeID uuid.UUID) (*entity.MyPiece, error)
+	RefreshMyPiece(piece *entity.MyPiece, newCode string) (*entity.MyPiece, error)
 	FindMyPieceByCode(pieceCode string) (*entity.MyPiece, error)
 	FindCollectedPiecesByAttendeeID(attendeeID uuid.UUID) ([]entity.CollectedPiece, error)
 	FindCollectedPiece(attendeeID uuid.UUID, pieceID uuid.UUID) (*entity.CollectedPiece, error)
@@ -40,13 +42,31 @@ func (r *PieceRepositoryImpl) FindAttendeeByUserID(userID uuid.UUID) (*entity.At
 
 func (r *PieceRepositoryImpl) FindMyPieceByAttendeeID(attendeeID uuid.UUID) (*entity.MyPiece, error) {
 	var piece entity.MyPiece
-	if err := r.DB.Where("attendee_id = ?", attendeeID).First(&piece).Error; err != nil {
+	if err := r.DB.Where("attendee_id = ?", attendeeID).Order("created_at DESC").First(&piece).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil
 		}
 		return nil, err
 	}
 	return &piece, nil
+}
+
+func (r *PieceRepositoryImpl) RefreshMyPiece(piece *entity.MyPiece, newCode string) (*entity.MyPiece, error) {
+	newExpireDate := time.Now().Add(24 * time.Hour)
+	if err := r.DB.Model(piece).Updates(map[string]interface{}{
+		"piece_code":  newCode,
+		"expire_date": newExpireDate,
+	}).Error; err != nil {
+		if errors.Is(err, gorm.ErrDuplicatedKey) {
+			return nil, errors.New("duplicate piece code, please try again")
+		}
+		return nil, err
+	}
+
+	piece.PieceCode = newCode
+	piece.ExpireDate = newExpireDate
+
+	return piece, nil
 }
 
 func (r *PieceRepositoryImpl) FindMyPieceByCode(pieceCode string) (*entity.MyPiece, error) {

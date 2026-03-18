@@ -250,7 +250,6 @@ const (
 	OtherObjective      Objective = "other"
 )
 
-
 var ObjectiveSet = map[Objective]struct{}{
 	LearnAboutFaculties: {},
 	FindMyself:          {},

@@ -79,6 +79,32 @@ func (u *PieceUsecaseImpl) GetMyPiece(c *fiber.Ctx) error {
 		})
 	}
 
+	// If the piece is expired, update the code and expiration date
+	if piece.ExpireDate.Before(time.Now()) {
+		newCode, pErr := generatePieceCode()
+		if pErr != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": pErr.Error()})
+		}
+
+		maxRetries := 5
+		for range maxRetries {
+			piece, err := u.PieceRepo.RefreshMyPiece(piece, newCode)
+			if err == nil {
+				return c.JSON(pieceModel.MyPieceResponse{
+					ID:         piece.ID,
+					UserID:     attendee.UserID,
+					PieceCode:  piece.PieceCode,
+					ExpireDate: piece.ExpireDate,
+					Faculty:    attendee.InitialFirstInterestedFaculty,
+				})
+			}
+		}
+
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to refresh piece after multiple attempts, please try again later",
+		})
+	}
+
 	return c.JSON(pieceModel.MyPieceResponse{
 		ID:         piece.ID,
 		UserID:     attendee.UserID,
