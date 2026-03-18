@@ -28,10 +28,11 @@ type PieceUsecase interface {
 type PieceUsecaseImpl struct {
 	PieceRepo       repository.PieceRepository
 	LeaderboardCase LeaderboardUsecase
+	ScoreRepo       repository.ScoreRepository
 	validate        *validator.Validate
 }
 
-func NewPieceUsecase(pieceRepo repository.PieceRepository, leaderboardUsecase LeaderboardUsecase) PieceUsecase {
+func NewPieceUsecase(pieceRepo repository.PieceRepository, leaderboardUsecase LeaderboardUsecase, scoreRepo repository.ScoreRepository) PieceUsecase {
 	return &PieceUsecaseImpl{
 		PieceRepo:       pieceRepo,
 		LeaderboardCase: leaderboardUsecase,
@@ -264,12 +265,13 @@ func (u *PieceUsecaseImpl) CollectPiece(c *fiber.Ctx) error {
 	if err := u.PieceRepo.CreateCollectedPiece(&cp); err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
-
+	u.ScoreRepo.IncrementCountByIndex(userID, facultyIndex[string(friendPiece.Attendee.InitialFirstInterestedFaculty)])
 	faculty := friendPiece.Attendee.InitialFirstInterestedFaculty
 	if idx, ok := facultyIndex[string(faculty)]; ok {
 		_ = u.LeaderboardCase.UpdateScore(userID, idx)
 		_ = u.LeaderboardCase.UpdateLeaderboard()
 	}
+	
 
 	return c.JSON(pieceModel.CollectPieceResponse{
 		Ok: true,

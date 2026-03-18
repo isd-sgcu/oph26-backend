@@ -24,6 +24,7 @@ type AttendeeUsecaseImpl struct {
 	userRepo        repository.UserRepository
 	attendeeRepo    repository.AttendeeRepository
 	leaderboardRepo repository.LeaderboardRepository
+	scoreRepo       repository.ScoreRepository
 	validate        *validator.Validate
 }
 
@@ -36,13 +37,15 @@ type AttendeeUsecase interface {
 	GetMyFavWorkshops(c *fiber.Ctx) error
 	PutMyFavWorkshops(c *fiber.Ctx) error
 	GenerateLeaderboard(user entity.User) entity.Leaderboard
+	GenerateScore(user entity.User) entity.Score
 }
 
-func NewAttendeeUsecase(attendeeRepo repository.AttendeeRepository, userRepo repository.UserRepository, leaderboardRepo repository.LeaderboardRepository) AttendeeUsecase {
+func NewAttendeeUsecase(attendeeRepo repository.AttendeeRepository, userRepo repository.UserRepository, leaderboardRepo repository.LeaderboardRepository, scoreRepo repository.ScoreRepository) AttendeeUsecase {
 	return &AttendeeUsecaseImpl{
 		userRepo:        userRepo,
 		attendeeRepo:    attendeeRepo,
 		leaderboardRepo: leaderboardRepo,
+		scoreRepo:       scoreRepo,
 		validate:        validator.New(),
 	}
 }
@@ -386,7 +389,12 @@ func (u *AttendeeUsecaseImpl) PostAttendee(c *fiber.Ctx) error {
 			"error": "Failed to create leaderboard",
 		})
 	}
-
+	score := u.GenerateScore(entity.User{ID: userId})
+	if err := u.scoreRepo.Create(&score); err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to create score",
+		})
+	}
 	if request.AttendeeType == "student" {
 		myPiece := entity.MyPiece{
 			AttendeeID: attendee.ID,
@@ -785,5 +793,13 @@ func (u *AttendeeUsecaseImpl) GenerateLeaderboard(user entity.User) entity.Leade
 	return entity.Leaderboard{
 		UserID: user.ID,
 		IsTop:  pq.BoolArray(make([]bool, 20)),
+	}
+}
+
+func (u *AttendeeUsecaseImpl) GenerateScore(user entity.User) entity.Score {
+	return entity.Score{
+		UserID: user.ID,
+		User:   user,
+		Count:  pq.Int32Array(make([]int32, 20)),
 	}
 }

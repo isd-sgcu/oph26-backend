@@ -16,6 +16,7 @@ type ScoreRepository interface {
 	IncrementCountByIndex(userID uuid.UUID, index int) error
 	FindAll() ([]entity.Score, error)
 	Count() (int, error)
+	Create(score *entity.Score) error
 }
 
 func NewScoreRepository(db *gorm.DB) ScoreRepository {
@@ -49,4 +50,8 @@ func (r *ScoreRepositoryImpl) FindAll() ([]entity.Score, error) {
 	}
 
 	return scores, nil
+}
+
+func (r *ScoreRepositoryImpl) Create(score *entity.Score) error {
+	return r.DB.Create(score).Error
 }
