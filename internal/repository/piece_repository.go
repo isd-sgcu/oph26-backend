@@ -12,7 +12,7 @@ import (
 type PieceRepository interface {
 	FindAttendeeByUserID(userID uuid.UUID) (*entity.Attendee, error)
 	FindMyPieceByAttendeeID(attendeeID uuid.UUID) (*entity.MyPiece, error)
-	RefreshMyPiece(piece *entity.MyPiece, newCode string) error
+	RefreshMyPiece(piece *entity.MyPiece, newCode string) (*entity.MyPiece, error)
 	FindMyPieceByCode(pieceCode string) (*entity.MyPiece, error)
 	FindCollectedPiecesByAttendeeID(attendeeID uuid.UUID) ([]entity.CollectedPiece, error)
 	FindCollectedPiece(attendeeID uuid.UUID, pieceID uuid.UUID) (*entity.CollectedPiece, error)
@@ -51,20 +51,24 @@ func (r *PieceRepositoryImpl) FindMyPieceByAttendeeID(attendeeID uuid.UUID) (*en
 	return &piece, nil
 }
 
-func (r *PieceRepositoryImpl) RefreshMyPiece(piece *entity.MyPiece, newCode string) error {
+func (r *PieceRepositoryImpl) RefreshMyPiece(piece *entity.MyPiece, newCode string) (*entity.MyPiece, error) {
 	newExpireDate := time.Now().Add(24 * time.Hour)
 	if err := r.DB.Model(piece).Updates(map[string]interface{}{
 		"piece_code":  newCode,
 		"expire_date": newExpireDate,
 	}).Error; err != nil {
-		return err
+		if errors.Is(err, gorm.ErrDuplicatedKey) {
+			return nil, errors.New("duplicate piece code, please try again")
+		}
+		return nil, err
 	}
 
 	piece.PieceCode = newCode
 	piece.ExpireDate = newExpireDate
-	return nil
+
+	return piece, nil
 }
-  
+
 func (r *PieceRepositoryImpl) FindMyPieceByCode(pieceCode string) (*entity.MyPiece, error) {
 	var piece entity.MyPiece
 	if err := r.DB.Preload("Attendee").Where("piece_code = ?", pieceCode).First(&piece).Error; err != nil {
