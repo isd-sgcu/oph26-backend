@@ -800,6 +800,5 @@ func (u *AttendeeUsecaseImpl) GenerateScore(user entity.User) entity.Score {
 	return entity.Score{
 		UserID: user.ID,
 		User:   user,
-		Count:  pq.Int32Array(make([]int32, 20)),
 	}
 }

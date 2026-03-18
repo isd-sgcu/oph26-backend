@@ -28,11 +28,8 @@ func (r *ScoreRepositoryImpl) IncrementCountByIndex(userID uuid.UUID, index int)
 		return fmt.Errorf("faculty index must be in range 1..20, got %d", index)
 	}
 
-	return r.DB.Exec(`
-        UPDATE scores
-        SET count[?] = count[?] + 1
-        WHERE user_id = ?
-    `, index, index, userID).Error
+	column := fmt.Sprintf("count%d", index)
+	return r.DB.Model(&entity.Score{}).Where("user_id = ?", userID).Update(column, gorm.Expr(column+" + 1")).Error
 }
 
 func (r *ScoreRepositoryImpl) Count() (int, error) {
