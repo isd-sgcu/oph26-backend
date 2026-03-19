@@ -65,7 +65,7 @@ func main() {
 	checkinUsecase := usecase.NewCheckinUsecase(attendeeRepo, staffRepo, checkinRepo)
 	attendeeUsecase := usecase.NewAttendeeUsecase(attendeeRepo, userRepo, leaderboardRepo, scoreRepo)
 	leaderboardUsecase := usecase.NewLeaderboardUsecase(leaderboardRepo, scoreRepo)
-	pieceUsecase := usecase.NewPieceUsecase(pieceRepo, leaderboardUsecase, scoreRepo)
+	pieceUsecase := usecase.NewPieceUsecase(pieceRepo, leaderboardUsecase, scoreRepo, attendeeRepo)
 
 	// Stats
 	statsRepo := repository.NewStatsRepository(config.DB)
