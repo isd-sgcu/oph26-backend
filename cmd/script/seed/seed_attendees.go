@@ -14,9 +14,7 @@ import (
 // attendees[0] and [1] are highschool (eligible for MyPiece).
 // attendees[2] is a parent.
 func seedAttendees(db *gorm.DB, users []entity.User, staffs []entity.Staff) []entity.Attendee {
-	checkinTime := time.Now()
 	matthayomPlai := model.MatthayomPlai
-
 	attendees := []entity.Attendee{
 		{
 			UserID:                        users[0].ID,
@@ -32,8 +30,6 @@ func seedAttendees(db *gorm.DB, users []entity.User, staffs []entity.Staff) []en
 			InterestedFaculty:             entity.FacultyList{model.ENG, model.SCI},
 			ObjectiveSelected:             pq.StringArray{"explore"},
 			TicketCode:                    "H000001",
-			CheckinStaffID:                &staffs[0].ID,
-			CheckedInAt:                   &checkinTime,
 		},
 		{
 			UserID:                        users[1].ID,
