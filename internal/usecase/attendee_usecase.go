@@ -9,7 +9,6 @@ import (
 	"oph26-backend/internal/model/attendee"
 	attendeeModel "oph26-backend/internal/model/attendee"
 	"oph26-backend/internal/repository"
-	"regexp"
 	"slices"
 	"time"
 
@@ -30,7 +29,6 @@ type AttendeeUsecaseImpl struct {
 
 type AttendeeUsecase interface {
 	GetMyAttendee(c *fiber.Ctx) error
-	GetByAttendeeId(c *fiber.Ctx) error
 	PutAttendee(c *fiber.Ctx) error
 	PostAttendee(c *fiber.Ctx) error
 	UpdateCertificateName(c *fiber.Ctx) error
@@ -134,90 +132,6 @@ func (u *AttendeeUsecaseImpl) GetMyAttendee(c *fiber.Ctx) error {
 		TicketCode:                    attendee.TicketCode,
 		UpdatedAt:                     attendee.UpdatedAt,
 		UserID:                        attendee.UserID,
-	})
-}
-
-func (u *AttendeeUsecaseImpl) GetByAttendeeId(c *fiber.Ctx) error {
-	ticketCode := c.Params("attendeeId")
-	matched, _ := regexp.MatchString(`^[HSPEA]\d{6}$`, ticketCode)
-	if !matched {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid Ticket Code",
-		})
-	}
-
-	role, ok := c.Locals("role").(string)
-	if !ok {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "Failed to retrieve user role from context",
-		})
-	}
-	// TODO: Auth here
-	if role == "attendee" {
-		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
-			"error": "Forbidden",
-		})
-	}
-
-	attendee, err := u.attendeeRepo.FindByTicketCode(ticketCode)
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": err.Error(),
-		})
-	}
-	if attendee == nil {
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
-			"error": "Attendee not found",
-		})
-	}
-
-	var checkinStaff *model.StaffResponse
-	if attendee.CheckinStaff != nil {
-		staff := attendee.CheckinStaff
-		checkinStaff = &model.StaffResponse{
-			ID:        staff.ID,
-			UserID:    staff.UserID,
-			Cuid:      staff.Cuid,
-			Firstname: staff.Firstname,
-			Surname:   staff.Surname,
-			Nickname:  staff.Nickname,
-			Phone:     staff.Phone,
-			Year:      staff.Year,
-			Email:     staff.Email,
-			Faculty:   staff.Faculty,
-			CreatedAt: staff.CreatedAt,
-			UpdatedAt: staff.UpdatedAt,
-		}
-	}
-
-	return c.JSON(&attendeeModel.AttendeeStaffResponse{
-		AttendeeResponse: attendeeModel.AttendeeResponse{
-			DateOfBirth:                   formatDateOfBirth(attendee.DateOfBirth),
-			AttendeeType:                  attendee.AttendeeType,
-			CertificateName:               attendee.CertificateName,
-			CheckedInAt:                   attendee.CheckedInAt,
-			CheckinStaffID:                attendee.CheckinStaffID,
-			CreatedAt:                     attendee.CreatedAt,
-			FavoriteWorkshops:             attendee.FavoriteWorkshops.ToSlice(),
-			Firstname:                     attendee.Firstname,
-			ID:                            attendee.ID,
-			InitialFirstInterestedFaculty: attendee.InitialFirstInterestedFaculty,
-			InterestedFaculty:             attendee.InterestedFaculty,
-			NewsSourcesOther:              attendee.NewsSourcesOther,
-			NewsSourceSelected:            attendee.NewsSourceSelected,
-			ObjectiveOther:                attendee.ObjectiveOther,
-			ObjectiveSelected:             attendee.ObjectiveSelected,
-			Province:                      attendee.Province,
-			District:                      attendee.District,
-			SchoolName:                    attendee.SchoolName,
-			StudyLevel:                    attendee.StudyLevel,
-			Surname:                       attendee.Surname,
-			TicketCode:                    attendee.TicketCode,
-			UpdatedAt:                     attendee.UpdatedAt,
-			UserID:                        attendee.UserID,
-			TransportationMethod:          attendee.TransportationMethod,
-		},
-		CheckinStaff: checkinStaff,
 	})
 }
 

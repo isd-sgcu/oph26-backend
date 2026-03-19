@@ -32,9 +32,6 @@ type Attendee struct {
 	TicketCode                    string            `gorm:"type:char(7);not null;uniqueIndex"`
 	MyPiece                       *MyPiece
 	CertificateName               *string    `gorm:"type:text"`
-	CheckinStaffID                *uuid.UUID `gorm:"type:uuid"`
-	CheckinStaff                  *Staff     `gorm:"foreignKey:CheckinStaffID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL"`
-	CheckedInAt                   *time.Time
 	FavoriteWorkshops             StringSet `gorm:"type:text[]"`
 	TransportationMethod          string
 	Rank                          int `gorm:"default:-1"`
