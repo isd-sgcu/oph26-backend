@@ -108,6 +108,25 @@ func (u *AuthUsecaseImpl) Login(c *fiber.Ctx) error {
 				})
 			}
 		}
+	} else {
+		// If user exists, still check if they are staff to set the role correctly (in case they were created before as attendee)
+		if user.Role != "staff" {
+			staffUser, err := u.StaffRepository.FindByEmail(email)
+			if err != nil {
+				return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+					"error": err.Error(),
+				})
+			}
+			if staffUser != nil {
+				user.Role = "staff"
+				user.StaffId = &staffUser.ID
+				if err := u.UserRepository.Update(user); err != nil {
+					return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+						"error": err.Error(),
+					})
+				}
+			}
+		}
 	}
 
 	// 3. Generate Tokens
