@@ -176,11 +176,18 @@ func (u *PieceUsecaseImpl) GetCollectedPieces(c *fiber.Ctx) error {
 		}
 	}
 
+	sameMissingCount, err := u.ScoreRepo.GetMissingCounts(userID)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	}
+
+
 	return c.JSON(pieceModel.CollectedPiecesResponse{
 		CollectedPieces: friendPieces,
 		Stats: pieceModel.CollectedPiecesStats{
 			TotalCollected:     len(collected),
 			CollectedByFaculty: collectedByFaculty,
+			SameMissingCount:   sameMissingCount,
 		},
 	})
 }
