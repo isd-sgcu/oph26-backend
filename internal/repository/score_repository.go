@@ -18,7 +18,7 @@ type ScoreRepository interface {
 	FindAll() ([]entity.Score, error)
 	Count() (int, error)
 	Create(score *entity.Score) error
-	GetMissingCounts(userID uuid.UUID) (map[int]int, error)
+	GetMissingCounts(userID uuid.UUID) (map[int]float64, error)
 	IsComplete(userID uuid.UUID) (bool, error)
 }
 
