@@ -30,6 +30,7 @@ type FacultyStats struct {
 type CollectedPiecesStats struct {
 	TotalCollected     int                     `json:"total_collected"`
 	CollectedByFaculty map[string]FacultyStats `json:"collected_by_faculty"`
+	SameMissingCount   map[int]int             `json:"same_missing_count"`
 }
 
 type CollectedPiecesResponse struct {
