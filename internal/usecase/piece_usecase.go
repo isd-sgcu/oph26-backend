@@ -36,6 +36,7 @@ func NewPieceUsecase(pieceRepo repository.PieceRepository, leaderboardUsecase Le
 	return &PieceUsecaseImpl{
 		PieceRepo:       pieceRepo,
 		LeaderboardCase: leaderboardUsecase,
+		ScoreRepo:       scoreRepo,
 		validate:        validator.New(),
 	}
 }
