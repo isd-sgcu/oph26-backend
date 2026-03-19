@@ -18,7 +18,7 @@ type ScoreRepository interface {
 	FindAll() ([]entity.Score, error)
 	Count() (int, error)
 	Create(score *entity.Score) error
-	GetMissingCounts(userID uuid.UUID) (map[int]int, error)
+	GetMissingCounts(userID uuid.UUID) (map[int]float64, error)
 	IsComplete(userID uuid.UUID) (bool, error)
 }
 
@@ -65,13 +65,18 @@ func (r *ScoreRepositoryImpl) Create(score *entity.Score) error {
 	return r.DB.Create(score).Error
 }
 
-func (r *ScoreRepositoryImpl) GetMissingCounts(userID uuid.UUID) (map[int]int, error) {
+func (r *ScoreRepositoryImpl) GetMissingCounts(userID uuid.UUID) (map[int]float64, error) {
+	total, err := r.Count()
+	if err != nil {
+		return nil, err
+	}
+
 	var score entity.Score
 	if err := r.DB.Where("user_id = ?", userID).First(&score).Error; err != nil {
 		return nil, err
 	}
 
-	result := make(map[int]int)
+	result := make(map[int]float64)
 	scoreValue := reflect.ValueOf(&score).Elem()
 	for i := 1; i <= 20; i++ {
 		fieldName := fmt.Sprintf("Count%d", i)
@@ -83,7 +88,8 @@ func (r *ScoreRepositoryImpl) GetMissingCounts(userID uuid.UUID) (map[int]int, e
 			if err != nil {
 				return nil, err
 			}
-			result[i] = int(count)
+			percent := (float64(count) / float64(total-1)) * 100 // total-1 because excluding self
+			result[i] = percent
 		}
 	}
 	return result, nil
