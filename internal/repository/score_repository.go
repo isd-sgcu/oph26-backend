@@ -75,7 +75,7 @@ func (r *ScoreRepositoryImpl) GetMissingCounts(userID uuid.UUID) (map[int]int, e
 	for i := 1; i <= 20; i++ {
 		fieldName := fmt.Sprintf("Count%d", i)
 		field := scoreValue.FieldByName(fieldName)
-		if field.IsValid() && field.Int() == 0 {
+		if field.IsValid() && field.Kind() == reflect.Int && field.Int() == 0 {
 			var count int64
 			column := fmt.Sprintf("count%d", i)
 			err := r.DB.Model(&entity.Score{}).Where(column+" = 0 AND user_id != ?", userID).Count(&count).Error
