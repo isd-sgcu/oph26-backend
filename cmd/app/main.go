@@ -67,6 +67,10 @@ func main() {
 	leaderboardUsecase := usecase.NewLeaderboardUsecase(leaderboardRepo, scoreRepo)
 	pieceUsecase := usecase.NewPieceUsecase(pieceRepo, leaderboardUsecase, scoreRepo)
 
+	// Stats
+	statsRepo := repository.NewStatsRepository(config.DB)
+	statsUsecase := usecase.NewStatsUsecase(statsRepo)
+
 	// Init Middleware
 	authMiddleware := middleware.NewAuthMiddleware(cfg.JWTSecret)
 	rateLimitMiddleware := middleware.RateLimitMiddleware(10, time.Minute) // 10 requests per minute
@@ -78,6 +82,7 @@ func main() {
 		AuthMiddleware:      authMiddleware,
 		UserUsecase:         userUsecase,
 		PieceUsecase:        pieceUsecase,
+		StatsUsecase:        statsUsecase,
 		RateLimitMiddleware: rateLimitMiddleware,
 		LeaderboardUsecase:  leaderboardUsecase,
 	})
