@@ -37,6 +37,7 @@ type Attendee struct {
 	CheckedInAt                   *time.Time
 	FavoriteWorkshops             StringSet `gorm:"type:text[]"`
 	TransportationMethod          string
+	Rank                          int `gorm:"default:-1"`
 	CreatedAt                     time.Time
 	UpdatedAt                     time.Time
 }

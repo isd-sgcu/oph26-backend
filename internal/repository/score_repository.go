@@ -19,6 +19,7 @@ type ScoreRepository interface {
 	Count() (int, error)
 	Create(score *entity.Score) error
 	GetMissingCounts(userID uuid.UUID) (map[int]int, error)
+	IsComplete(userID uuid.UUID) (bool, error)
 }
 
 func NewScoreRepository(db *gorm.DB) ScoreRepository {
@@ -86,4 +87,21 @@ func (r *ScoreRepositoryImpl) GetMissingCounts(userID uuid.UUID) (map[int]int, e
 		}
 	}
 	return result, nil
+}
+
+func (r *ScoreRepositoryImpl) IsComplete(userID uuid.UUID) (bool, error) {
+	var score entity.Score
+	if err := r.DB.Where("user_id = ?", userID).First(&score).Error; err != nil {
+		return false, err
+	}
+
+	scoreValue := reflect.ValueOf(&score).Elem()
+	for i := 1; i <= 20; i++ {
+		fieldName := fmt.Sprintf("Count%d", i)
+		field := scoreValue.FieldByName(fieldName)
+		if field.IsValid() && field.Kind() == reflect.Int && field.Int() == 0 {
+			return false, nil
+		}
+	}
+	return true, nil
 }

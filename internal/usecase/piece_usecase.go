@@ -26,14 +26,16 @@ type PieceUsecase interface {
 }
 
 type PieceUsecaseImpl struct {
+	AttendeeRepo    repository.AttendeeRepository
 	PieceRepo       repository.PieceRepository
 	LeaderboardCase LeaderboardUsecase
 	ScoreRepo       repository.ScoreRepository
 	validate        *validator.Validate
 }
 
-func NewPieceUsecase(pieceRepo repository.PieceRepository, leaderboardUsecase LeaderboardUsecase, scoreRepo repository.ScoreRepository) PieceUsecase {
+func NewPieceUsecase(pieceRepo repository.PieceRepository, leaderboardUsecase LeaderboardUsecase, scoreRepo repository.ScoreRepository, attendeeRepo repository.AttendeeRepository) PieceUsecase {
 	return &PieceUsecaseImpl{
+		AttendeeRepo:    attendeeRepo,
 		PieceRepo:       pieceRepo,
 		LeaderboardCase: leaderboardUsecase,
 		ScoreRepo:       scoreRepo,
@@ -182,13 +184,13 @@ func (u *PieceUsecaseImpl) GetCollectedPieces(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
 
-
 	return c.JSON(pieceModel.CollectedPiecesResponse{
 		CollectedPieces: friendPieces,
 		Stats: pieceModel.CollectedPiecesStats{
 			TotalCollected:     len(collected),
 			CollectedByFaculty: collectedByFaculty,
 			SameMissingCount:   sameMissingCount,
+			Rank:               attendee.Rank,
 		},
 	})
 }
@@ -284,6 +286,19 @@ func (u *PieceUsecaseImpl) CollectPiece(c *fiber.Ctx) error {
 
 	if err := u.ScoreRepo.IncrementCountByIndex(userID, idx); err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	
+	if attendee.Rank <= 0 {
+		isComplete, err := u.ScoreRepo.IsComplete(userID)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		}
+		if isComplete {
+			if err := u.AttendeeRepo.UpdateAttendeeRank(attendee.UserID); err != nil {
+				return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+			}
+		}
 	}
 
 	return c.JSON(pieceModel.CollectPieceResponse{

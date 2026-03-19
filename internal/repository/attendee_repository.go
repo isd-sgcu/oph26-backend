@@ -16,6 +16,7 @@ type AttendeeRepository interface {
 	CountByAttendeeType(attendeeType string) (int64, error)
 	CreateMyPieceAndLink(attendee *entity.Attendee, myPiece *entity.MyPiece) error
 	GetFavWorkshop(userID uuid.UUID) (*entity.StringSet, error)
+	UpdateAttendeeRank(userID uuid.UUID) error
 }
 
 type AttendeeRepositoryImpl struct {
@@ -97,4 +98,16 @@ func (r *AttendeeRepositoryImpl) GetFavWorkshop(userID uuid.UUID) (*entity.Strin
 	}
 
 	return &set, nil
+}
+
+func (r *AttendeeRepositoryImpl) UpdateAttendeeRank(userID uuid.UUID) error {
+	var maxRank int
+	if err := r.DB.Model(&entity.Attendee{}).Select("COALESCE(MAX(rank), 0)").Scan(&maxRank).Error; err != nil {
+		return err
+	}
+	result := r.DB.Model(&entity.Attendee{}).
+		Where("user_id = ?", userID).
+		Update("rank", maxRank+1)
+
+	return result.Error
 }
