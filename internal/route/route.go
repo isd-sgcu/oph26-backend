@@ -15,6 +15,7 @@ type RouteConfig struct {
 	PieceUsecase        usecase.PieceUsecase
 	UserUsecase         usecase.UserUsecase
 	LeaderboardUsecase  usecase.LeaderboardUsecase
+	StatsUsecase        usecase.StatsUsecase
 	AuthMiddleware      fiber.Handler
 	RateLimitMiddleware fiber.Handler
 }
@@ -77,6 +78,13 @@ func SetupRoutes(r *fiber.App, c RouteConfig) {
 		checkin := api.Group("/checkin", c.AuthMiddleware)
 		{
 			checkin.Post("/", c.CheckinUsecase.CheckIn)
+		}
+
+		stats := api.Group("/stats", c.RateLimitMiddleware)
+		{
+			stats.Get("/stats/attendees", c.StatsUsecase.GetCountAttendeesStats)
+			stats.Get("/stats/attendees/checkins_by_date", c.StatsUsecase.GetCountUniqueAttendeesCheckinsGroupedByDateStats)
+			stats.Get("/stats/pieces/available_by_faculty", c.StatsUsecase.GetCountAvailablePiecesGroupedByFacultyStats)
 		}
 	}
 }
