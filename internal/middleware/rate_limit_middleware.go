@@ -12,5 +12,14 @@ func RateLimitMiddleware(maxRequests int, window time.Duration) fiber.Handler {
 		Max:               maxRequests,
 		Expiration:        window,
 		LimiterMiddleware: limiter.SlidingWindow{},
+		KeyGenerator: func(c *fiber.Ctx) string {
+			if ip := c.Get("CF-Connecting-IP"); ip != "" {
+				return ip
+			}
+			if ip := c.Get("X-Forwarded-For"); ip != "" {
+				return ip
+			}
+			return c.IP()
+		},
 	})
 }

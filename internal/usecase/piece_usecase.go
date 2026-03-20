@@ -19,6 +19,8 @@ var facultyIndex = map[string]int{
 	"ahs": 16, "vet": 17, "arts": 18, "scii": 19, "cusar": 20,
 }
 
+var pieceCodeRegex = regexp.MustCompile(`^[A-Z0-9]{6}$`)
+
 type PieceUsecase interface {
 	GetMyPiece(c *fiber.Ctx) error
 	GetCollectedPieces(c *fiber.Ctx) error
@@ -85,13 +87,12 @@ func (u *PieceUsecaseImpl) GetMyPiece(c *fiber.Ctx) error {
 
 	// If the piece is expired, update the code and expiration date
 	if piece.ExpireDate.Before(time.Now()) {
-		newCode, pErr := generatePieceCode()
-		if pErr != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": pErr.Error()})
-		}
-
 		maxRetries := 5
 		for range maxRetries {
+			newCode, pErr := generatePieceCode()
+			if pErr != nil {
+				return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": pErr.Error()})
+			}
 			piece, err := u.PieceRepo.RefreshMyPiece(piece, newCode)
 			if err == nil {
 				return c.JSON(pieceModel.MyPieceResponse{
@@ -233,8 +234,7 @@ func (u *PieceUsecaseImpl) CollectPiece(c *fiber.Ctx) error {
 		})
 	}
 
-	matched, _ := regexp.MatchString(`^[A-Z0-9]{6}$`, reqBody.PieceCode)
-	if !matched {
+	if !pieceCodeRegex.MatchString(reqBody.PieceCode) {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "Invalid piece code",
 		})
