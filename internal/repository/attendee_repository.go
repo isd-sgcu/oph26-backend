@@ -41,8 +41,7 @@ func (r *AttendeeRepositoryImpl) FindByUserID(userID uuid.UUID) (*entity.Attende
 
 func (r *AttendeeRepositoryImpl) FindByTicketCode(ticketCode string) (*entity.Attendee, error) {
 	var attendee entity.Attendee
-	err := r.DB.Preload("CheckinStaff").Where("ticket_code = ?", ticketCode).First(&attendee).Error
-	if err != nil {
+	if err := r.DB.Where("ticket_code = ?", ticketCode).First(&attendee).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil
 		}
@@ -101,13 +100,16 @@ func (r *AttendeeRepositoryImpl) GetFavWorkshop(userID uuid.UUID) (*entity.Strin
 }
 
 func (r *AttendeeRepositoryImpl) UpdateAttendeeRank(userID uuid.UUID) error {
-	var maxRank int
-	if err := r.DB.Model(&entity.Attendee{}).Select("COALESCE(MAX(rank), 0)").Scan(&maxRank).Error; err != nil {
-		return err
-	}
-	result := r.DB.Model(&entity.Attendee{}).
-		Where("user_id = ?", userID).
-		Update("rank", maxRank+1)
-
-	return result.Error
+	return r.DB.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Exec("SELECT pg_advisory_xact_lock(42)").Error; err != nil {
+			return err
+		}
+		var maxRank int
+		if err := tx.Model(&entity.Attendee{}).Select("COALESCE(MAX(rank), 0)").Where("rank > 0").Scan(&maxRank).Error; err != nil {
+			return err
+		}
+		return tx.Model(&entity.Attendee{}).
+			Where("user_id = ? AND rank <= 0", userID).
+			Update("rank", maxRank+1).Error
+	})
 }

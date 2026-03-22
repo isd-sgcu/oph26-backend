@@ -8,7 +8,7 @@ import (
 
 type MyPiece struct {
 	ID         uuid.UUID `gorm:"type:uuid;default:uuid_generate_v4();primaryKey"`
-	AttendeeID uuid.UUID `gorm:"type:uuid;not null"`
+	AttendeeID uuid.UUID `gorm:"type:uuid;not null;index"`
 	Attendee   Attendee  `gorm:"foreignKey:AttendeeID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
 	PieceCode  string    `gorm:"type:text;uniqueIndex;not null"`
 	ExpireDate time.Time `gorm:"not null"`

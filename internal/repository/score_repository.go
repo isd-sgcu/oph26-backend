@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"oph26-backend/internal/entity"
 	"reflect"
+	"strings"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -70,44 +71,73 @@ func (r *ScoreRepositoryImpl) GetMissingCounts(userID uuid.UUID) (map[int]float6
 	if err != nil {
 		return nil, err
 	}
+	if total <= 1 {
+		return make(map[int]float64), nil
+	}
 
 	var score entity.Score
 	if err := r.DB.Where("user_id = ?", userID).First(&score).Error; err != nil {
 		return nil, err
 	}
 
-	result := make(map[int]float64)
+	zeroColumns := make([]int, 0)
 	scoreValue := reflect.ValueOf(&score).Elem()
 	for i := 1; i <= 20; i++ {
 		fieldName := fmt.Sprintf("Count%d", i)
 		field := scoreValue.FieldByName(fieldName)
 		if field.IsValid() && field.Kind() == reflect.Int && field.Int() == 0 {
-			var count int64
-			column := fmt.Sprintf("count%d", i)
-			err := r.DB.Model(&entity.Score{}).Where(column+" = 0 AND user_id != ?", userID).Count(&count).Error
-			if err != nil {
-				return nil, err
-			}
-			percent := (float64(count) / float64(total-1)) * 100 // total-1 because excluding self
-			result[i] = percent
+			zeroColumns = append(zeroColumns, i)
 		}
 	}
+
+	if len(zeroColumns) == 0 {
+		return make(map[int]float64), nil
+	}
+
+	selectParts := make([]string, len(zeroColumns))
+	for i, col := range zeroColumns {
+		colName := fmt.Sprintf("count%d", col)
+		selectParts[i] = fmt.Sprintf("COALESCE(SUM(CASE WHEN %s = 0 THEN 1 ELSE 0 END), 0) AS zero_%d", colName, col)
+	}
+
+	type zeroResult struct {
+		Column int
+		Count  int64
+	}
+
+	query := fmt.Sprintf("SELECT %s FROM scores WHERE user_id != ?", strings.Join(selectParts, ", "))
+	rows, err := r.DB.Raw(query, userID).Rows()
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	result := make(map[int]float64)
+	if rows.Next() {
+		vals := make([]interface{}, len(zeroColumns))
+		ptrs := make([]int64, len(zeroColumns))
+		for i := range vals {
+			vals[i] = &ptrs[i]
+		}
+		if err := rows.Scan(vals...); err != nil {
+			return nil, err
+		}
+		for i, col := range zeroColumns {
+			percent := (float64(ptrs[i]) / float64(total-1)) * 100
+			result[col] = percent
+		}
+	}
+
 	return result, nil
 }
 
 func (r *ScoreRepositoryImpl) IsComplete(userID uuid.UUID) (bool, error) {
-	var score entity.Score
-	if err := r.DB.Where("user_id = ?", userID).First(&score).Error; err != nil {
+	var count int64
+	err := r.DB.Model(&entity.Score{}).
+		Where("user_id = ? AND count1 > 0 AND count2 > 0 AND count3 > 0 AND count4 > 0 AND count5 > 0 AND count6 > 0 AND count7 > 0 AND count8 > 0 AND count9 > 0 AND count10 > 0 AND count11 > 0 AND count12 > 0 AND count13 > 0 AND count14 > 0 AND count15 > 0 AND count16 > 0 AND count17 > 0 AND count18 > 0 AND count19 > 0 AND count20 > 0", userID).
+		Count(&count).Error
+	if err != nil {
 		return false, err
 	}
-
-	scoreValue := reflect.ValueOf(&score).Elem()
-	for i := 1; i <= 20; i++ {
-		fieldName := fmt.Sprintf("Count%d", i)
-		field := scoreValue.FieldByName(fieldName)
-		if field.IsValid() && field.Kind() == reflect.Int && field.Int() == 0 {
-			return false, nil
-		}
-	}
-	return true, nil
+	return count > 0, nil
 }

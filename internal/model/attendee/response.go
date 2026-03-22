@@ -12,7 +12,6 @@ type AttendeeResponse struct {
 	AttendeeType                  string            `json:"attendee_type"`
 	CertificateName               *string           `json:"certificate_name"`
 	CheckedInAt                   *time.Time        `json:"checked_in_at"`
-	CheckinStaffID                *uuid.UUID        `json:"checkin_staff_id"`
 	CreatedAt                     time.Time         `json:"createdAt"`
 	FavoriteWorkshops             []string          `json:"favorite_workshops"`
 	Firstname                     string            `json:"firstname"`
