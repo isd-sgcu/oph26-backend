@@ -26,7 +26,7 @@ This backend is built using [Go](https://go.dev/) and [Fiber](https://gofiber.io
    ```bash
    go run ./cmd/app/main.go
    ```
-5. Run the seed:
+5. Run the seeds:
    ```bash
    go run ./cmd/script/seed/
    ```
