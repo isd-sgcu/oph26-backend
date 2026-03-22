@@ -144,6 +144,12 @@ func (u *AuthUsecaseImpl) Login(c *fiber.Ctx) error {
 			}
 			if attendee != nil {
 				user.AttendeeId = &attendee.ID
+				attendee.UserID = user.ID
+				if err := u.AttendeeRepository.Update(attendee, user.ID); err != nil {
+					return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+						"error": err.Error(),
+					})
+				}
 				updated = true
 			}
 		}
@@ -156,6 +162,12 @@ func (u *AuthUsecaseImpl) Login(c *fiber.Ctx) error {
 			}
 			if staffUser != nil {
 				user.StaffId = &staffUser.ID
+				staffUser.UserID = &user.ID
+				if err := u.StaffRepository.Update(staffUser); err != nil {
+					return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+						"error": err.Error(),
+					})
+				}
 				updated = true
 			}
 		}
