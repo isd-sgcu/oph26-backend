@@ -11,6 +11,7 @@ import (
 
 type CheckinUsecase interface {
 	CheckIn(c *fiber.Ctx) error
+	GetCheckinStatus(c *fiber.Ctx) error
 }
 
 type CheckinUsecaseImpl struct {
@@ -112,5 +113,37 @@ func (u *CheckinUsecaseImpl) CheckIn(c *fiber.Ctx) error {
 			TicketCode:  attendee.TicketCode,
 			Faculty:     staff.Faculty,
 		},
+	})	
+}
+
+func (u *CheckinUsecaseImpl) GetCheckinStatus(c *fiber.Ctx) error {
+	userID, ok := c.Locals("user_id").(uuid.UUID)
+	if !ok {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": "Unauthorized",
+		})
+	}
+
+	attendee, err := u.AttendeeRepository.FindByUserID(userID)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to find attendee",
+		})
+	}
+	if attendee == nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+			"error": "Attendee not found",
+		})
+	}
+
+	hasCheckedIn, statusErr := u.CheckinRepository.Checkinstatus(attendee.ID)
+	if statusErr != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to check check-in status",
+		})
+	}
+
+	return c.JSON(fiber.Map{
+		"status": hasCheckedIn,
 	})
 }

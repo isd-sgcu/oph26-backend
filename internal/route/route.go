@@ -75,7 +75,11 @@ func SetupRoutes(r *fiber.App, c RouteConfig) {
 			favWorkshop.Put("/me", c.AttendeeUsecase.PutMyFavWorkshops)
 		}
 
-		api.Post("/checkin", c.AuthMiddleware, c.CheckinUsecase.CheckIn)
+		checkin := api.Group("/checkin", c.AuthMiddleware)
+		{
+			checkin.Post("/", c.CheckinUsecase.CheckIn)
+			checkin.Get("/", c.CheckinUsecase.GetCheckinStatus)
+		}
 
 		stats := api.Group("/stats", c.RateLimitMiddleware)
 		{
