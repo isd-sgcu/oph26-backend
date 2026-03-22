@@ -41,8 +41,7 @@ func (r *AttendeeRepositoryImpl) FindByUserID(userID uuid.UUID) (*entity.Attende
 
 func (r *AttendeeRepositoryImpl) FindByTicketCode(ticketCode string) (*entity.Attendee, error) {
 	var attendee entity.Attendee
-	err := r.DB.Preload("CheckinStaff").Where("ticket_code = ?", ticketCode).First(&attendee).Error
-	if err != nil {
+	if err := r.DB.Where("ticket_code = ?", ticketCode).First(&attendee).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil
 		}
