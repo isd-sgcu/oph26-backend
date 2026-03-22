@@ -25,6 +25,7 @@ type AuthUsecase interface {
 type AuthUsecaseImpl struct {
 	UserRepository         repository.UserRepository
 	StaffRepository        repository.StaffRepository
+	AttendeeRepository     repository.AttendeeRepository
 	RefreshTokenRepository repository.RefreshTokenRepository
 	GoogleClientID         string
 	JWTSecret              string
@@ -34,6 +35,7 @@ type AuthUsecaseImpl struct {
 type AuthUsecaseConfig struct {
 	UserRepository         repository.UserRepository
 	StaffRepository        repository.StaffRepository
+	AttendeeRepository     repository.AttendeeRepository
 	RefreshTokenRepository repository.RefreshTokenRepository
 	GoogleClientID         string
 	JWTSecret              string
@@ -44,6 +46,7 @@ func NewAuthUsecase(config AuthUsecaseConfig) AuthUsecase {
 	return &AuthUsecaseImpl{
 		UserRepository:         config.UserRepository,
 		StaffRepository:        config.StaffRepository,
+		AttendeeRepository:     config.AttendeeRepository,
 		RefreshTokenRepository: config.RefreshTokenRepository,
 		GoogleClientID:         config.GoogleClientID,
 		JWTSecret:              config.JWTSecret,
@@ -89,10 +92,18 @@ func (u *AuthUsecaseImpl) Login(c *fiber.Ctx) error {
 		}
 		if staffUser != nil {
 			user = &entity.User{
-				Email: email,
-				Role:  "staff",
+				Email:   email,
+				Role:    "staff",
+				StaffId: &staffUser.ID,
 			}
 			if err := u.UserRepository.Create(user); err != nil {
+				return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+					"error": err.Error(),
+				})
+			}
+			// Update staff with user_id
+			staffUser.UserID = &user.ID
+			if err := u.StaffRepository.Update(staffUser); err != nil {
 				return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 					"error": err.Error(),
 				})
@@ -120,6 +131,32 @@ func (u *AuthUsecaseImpl) Login(c *fiber.Ctx) error {
 			if staffUser != nil {
 				user.Role = "staff"
 				user.StaffId = &staffUser.ID
+				if err := u.UserRepository.Update(user); err != nil {
+					return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+						"error": err.Error(),
+					})
+				}
+				// Update staff with user_id if not already set
+				if staffUser.UserID == nil {
+					staffUser.UserID = &user.ID
+					if err := u.StaffRepository.Update(staffUser); err != nil {
+						return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+							"error": err.Error(),
+						})
+					}
+				}
+			}
+		}
+		// Check if user is attendee and set AttendeeId if not set
+		if user.Role == "attendee" && user.AttendeeId == nil {
+			attendee, err := u.AttendeeRepository.FindByUserID(user.ID)
+			if err != nil {
+				return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+					"error": err.Error(),
+				})
+			}
+			if attendee != nil {
+				user.AttendeeId = &attendee.ID
 				if err := u.UserRepository.Update(user); err != nil {
 					return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 						"error": err.Error(),
