@@ -82,6 +82,10 @@ func (u *AuthUsecaseImpl) Login(c *fiber.Ctx) error {
 		})
 	}
 
+	var userToUpdate *entity.User
+	var staffToUpdate *entity.Staff
+	var attendeeToUpdate *entity.Attendee
+
 	if user == nil {
 		// Find user in staff database by email, if not found create new user with default role
 		staffUser, err := u.StaffRepository.FindByEmail(email)
@@ -101,7 +105,9 @@ func (u *AuthUsecaseImpl) Login(c *fiber.Ctx) error {
 					"error": err.Error(),
 				})
 			}
-			// Update staff with user_id
+			// Prepare to update staff with user_id
+			staffUser.UserID = &user.ID
+			staffToUpdate = staffUser
 		} else {
 			user = &entity.User{
 				Email: email,
@@ -125,16 +131,15 @@ func (u *AuthUsecaseImpl) Login(c *fiber.Ctx) error {
 			if staffUser != nil {
 				user.Role = "staff"
 				user.StaffId = &staffUser.ID
-				if err := u.UserRepository.Update(user); err != nil {
-					return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-						"error": err.Error(),
-					})
+				userToUpdate = user
+				// Prepare to update staff with user_id if not already set
+				if staffUser.UserID == nil {
+					staffUser.UserID = &user.ID
+					staffToUpdate = staffUser
 				}
-
 			}
 		}
 		// Update foreign keys if missing
-		updated := false
 		if user.Role == "attendee" && user.AttendeeId == nil {
 			attendee, err := u.AttendeeRepository.FindByUserID(user.ID)
 			if err != nil {
@@ -144,41 +149,65 @@ func (u *AuthUsecaseImpl) Login(c *fiber.Ctx) error {
 			}
 			if attendee != nil {
 				user.AttendeeId = &attendee.ID
-				attendee.UserID = user.ID
-				if err := u.AttendeeRepository.Update(attendee, user.ID); err != nil {
+				userToUpdate = user
+				// Ensure attendee.UserID is set correctly
+				if attendee.UserID != user.ID {
+					attendee.UserID = user.ID
+					attendeeToUpdate = attendee
+				}
+			}
+		}
+		if user.Role == "staff" {
+			if user.StaffId == nil {
+				staffUser, err := u.StaffRepository.FindByEmail(user.Email)
+				if err != nil {
 					return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 						"error": err.Error(),
 					})
 				}
-				updated = true
-			}
-		}
-		if user.Role == "staff" && user.StaffId == nil {
-			staffUser, err := u.StaffRepository.FindByEmail(user.Email)
-			if err != nil {
-				return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-					"error": err.Error(),
-				})
-			}
-			if staffUser != nil {
-				user.StaffId = &staffUser.ID
-				staffUser.UserID = &user.ID
-				if err := u.StaffRepository.Update(staffUser); err != nil {
+				if staffUser != nil {
+					user.StaffId = &staffUser.ID
+					staffUser.UserID = &user.ID
+					userToUpdate = user
+					staffToUpdate = staffUser
+				}
+			} else {
+				// StaffId is set, ensure the staff has correct UserID
+				staffUser, err := u.StaffRepository.FindByEmail(user.Email)
+				if err != nil {
 					return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 						"error": err.Error(),
 					})
 				}
-				updated = true
+				if staffUser != nil && staffUser.ID == *user.StaffId && staffUser.UserID == nil {
+					staffUser.UserID = &user.ID
+					staffToUpdate = staffUser
+				}
 			}
 		}
-		if updated {
-			if err := u.UserRepository.Update(user); err != nil {
-				return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-					"error": err.Error(),
-				})
-			}
-		}
+	}
 
+	// Perform all updates outside the if-else
+	if userToUpdate != nil {
+		if err := u.UserRepository.Update(userToUpdate); err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": err.Error(),
+			})
+		}
+	}
+	if staffToUpdate != nil {
+		if err := u.StaffRepository.Update(staffToUpdate); err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": err.Error(),
+			})
+		}
+	}
+	if attendeeToUpdate != nil {
+		if err := u.AttendeeRepository.Update(attendeeToUpdate, attendeeToUpdate.UserID); err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": err.Error(),
+			})
+		}
 	}
 
 	// 3. Generate Tokens
