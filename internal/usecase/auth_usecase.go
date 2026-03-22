@@ -102,12 +102,6 @@ func (u *AuthUsecaseImpl) Login(c *fiber.Ctx) error {
 				})
 			}
 			// Update staff with user_id
-			staffUser.UserID = &user.ID
-			if err := u.StaffRepository.Update(staffUser); err != nil {
-				return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-					"error": err.Error(),
-				})
-			}
 		} else {
 			user = &entity.User{
 				Email: email,
@@ -136,18 +130,11 @@ func (u *AuthUsecaseImpl) Login(c *fiber.Ctx) error {
 						"error": err.Error(),
 					})
 				}
-				// Update staff with user_id if not already set
-				if staffUser.UserID == nil {
-					staffUser.UserID = &user.ID
-					if err := u.StaffRepository.Update(staffUser); err != nil {
-						return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-							"error": err.Error(),
-						})
-					}
-				}
+
 			}
 		}
-		// Check if user is attendee and set AttendeeId if not set
+		// Update foreign keys if missing
+		updated := false
 		if user.Role == "attendee" && user.AttendeeId == nil {
 			attendee, err := u.AttendeeRepository.FindByUserID(user.ID)
 			if err != nil {
@@ -157,13 +144,29 @@ func (u *AuthUsecaseImpl) Login(c *fiber.Ctx) error {
 			}
 			if attendee != nil {
 				user.AttendeeId = &attendee.ID
-				if err := u.UserRepository.Update(user); err != nil {
-					return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-						"error": err.Error(),
-					})
-				}
+				updated = true
 			}
 		}
+		if user.Role == "staff" && user.StaffId == nil {
+			staffUser, err := u.StaffRepository.FindByEmail(user.Email)
+			if err != nil {
+				return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+					"error": err.Error(),
+				})
+			}
+			if staffUser != nil {
+				user.StaffId = &staffUser.ID
+				updated = true
+			}
+		}
+		if updated {
+			if err := u.UserRepository.Update(user); err != nil {
+				return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+					"error": err.Error(),
+				})
+			}
+		}
+
 	}
 
 	// 3. Generate Tokens
