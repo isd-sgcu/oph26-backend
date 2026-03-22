@@ -45,17 +45,17 @@ func main() {
 	staffRepo := repository.NewStaffRepository(config.DB)
 	// Auth
 	refreshTokenRepo := repository.NewRefreshTokenRepository(config.DB)
+	// Attendee
+	attendeeRepo := repository.NewAttendeeRepository(config.DB)
 	authUsecase := usecase.NewAuthUsecase(usecase.AuthUsecaseConfig{
 		UserRepository:         userRepo,
 		StaffRepository:        staffRepo,
+		AttendeeRepository:     attendeeRepo,
 		RefreshTokenRepository: refreshTokenRepo,
 		GoogleClientID:         cfg.GoogleClientID,
 		JWTSecret:              cfg.JWTSecret,
 		AppEnv:                 cfg.AppEnv,
 	})
-
-	// Attendee
-	attendeeRepo := repository.NewAttendeeRepository(config.DB)
 	leaderboardRepo := repository.NewLeaderboardRepository(config.DB)
 	scoreRepo := repository.NewScoreRepository(config.DB)
 	pieceRepo := repository.NewPieceRepository(config.DB)
