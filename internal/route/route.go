@@ -78,6 +78,7 @@ func SetupRoutes(r *fiber.App, c RouteConfig) {
 		checkin := api.Group("/checkin", c.AuthMiddleware)
 		{
 			checkin.Post("/", c.CheckinUsecase.CheckIn)
+			checkin.Get("/", c.CheckinUsecase.GetCheckinStatus)
 		}
 
 		stats := api.Group("/stats", c.RateLimitMiddleware)

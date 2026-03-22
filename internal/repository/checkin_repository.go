@@ -11,6 +11,7 @@ import (
 type CheckinRepository interface {
 	FindCheckinByAttendeeAndFaculty(attendeeID uuid.UUID, faculty string) ([]entity.Checkin, error)
 	CreateCheckin(attendeeId uuid.UUID, faculty string, staffId uuid.UUID) error
+	Checkinstatus(attendeeId uuid.UUID) (bool, error)
 }
 
 type CheckinRepositoryImpl struct {
@@ -39,3 +40,17 @@ func (r *CheckinRepositoryImpl) CreateCheckin(attendeeId uuid.UUID, faculty stri
 	}
 	return r.DB.Create(newCheckin).Error
 }
+
+func (r *CheckinRepositoryImpl) Checkinstatus(attendeeId uuid.UUID) (bool, error) {
+	var checkin entity.Checkin
+	err := r.DB.Where("attendee_id = ?", attendeeId).First(&checkin).Error
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return false, nil
+		}
+		return false, fmt.Errorf("failed to check checkin status: %w", err)
+	}
+	return true, nil
+}
+
+
