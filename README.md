@@ -88,8 +88,8 @@ The app exposes Prometheus metrics at `GET /metrics`.
 
 Metrics endpoint is protected with HTTP Basic Auth:
 
-- `METRICS_BASIC_AUTH_USER` (default: `metrics`)
-- `METRICS_BASIC_AUTH_PASS` (default: `metrics`)
+- `METRICS_BASIC_AUTH_USER`
+- `METRICS_BASIC_AUTH_PASS`
 
 Custom metrics currently exposed:
 
@@ -108,18 +108,6 @@ Custom metrics currently exposed:
 - `cuoph26_requests_per_second`
 - `cuoph26_server_up`
 
-Example `prometheus.yml` scrape config:
-
-```yaml
-scrape_configs:
-  - job_name: "oph26-backend"
-    metrics_path: /metrics
-    basic_auth:
-      username: metrics
-      password: metrics
-    static_configs:
-      - targets: ["localhost:8080"]
-```
 
 ---
 
