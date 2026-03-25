@@ -28,7 +28,7 @@ var startTime = time.Now()
 func SetupRoutes(r *fiber.App, c RouteConfig) {
 	r.Use("/metrics", c.MetricsBasicAuthMiddleware)
 
-	prom := fiberprometheus.New("cuoph26_backend")
+	prom := fiberprometheus.NewWithDefaultRegistry("cuoph26_backend")
 	prom.RegisterAt(r, "/metrics")
 	prom.SetSkipPaths([]string{"/ping", "/healthz", "/test"})
 	r.Use(prom.Middleware)
