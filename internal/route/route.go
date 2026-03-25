@@ -10,21 +10,24 @@ import (
 )
 
 type RouteConfig struct {
-	AuthUsecase          usecase.AuthUsecase
-	AttendeeUsecase      usecase.AttendeeUsecase
-	CheckinUsecase       usecase.CheckinUsecase
-	PieceUsecase         usecase.PieceUsecase
-	UserUsecase          usecase.UserUsecase
-	LeaderboardUsecase   usecase.LeaderboardUsecase
-	StatsUsecase         usecase.StatsUsecase
-	QuestionnaireUsecase usecase.QuestionnaireUsecase
-	AuthMiddleware       fiber.Handler
-	RateLimitMiddleware  fiber.Handler
+	AuthUsecase                usecase.AuthUsecase
+	AttendeeUsecase            usecase.AttendeeUsecase
+	CheckinUsecase             usecase.CheckinUsecase
+	PieceUsecase               usecase.PieceUsecase
+	UserUsecase                usecase.UserUsecase
+	LeaderboardUsecase         usecase.LeaderboardUsecase
+	StatsUsecase               usecase.StatsUsecase
+	QuestionnaireUsecase       usecase.QuestionnaireUsecase
+	AuthMiddleware             fiber.Handler
+	RateLimitMiddleware        fiber.Handler
+	MetricsBasicAuthMiddleware fiber.Handler
 }
 
 var startTime = time.Now()
 
 func SetupRoutes(r *fiber.App, c RouteConfig) {
+	r.Use("/metrics", c.MetricsBasicAuthMiddleware)
+
 	prom := fiberprometheus.New("cuoph26_backend")
 	prom.RegisterAt(r, "/metrics")
 	prom.SetSkipPaths([]string{"/ping", "/healthz", "/test"})

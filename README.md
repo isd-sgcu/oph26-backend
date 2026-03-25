@@ -82,6 +82,42 @@ Access tokens is valid for 15 minutes, and refresh tokens is valid for 7 days. Y
 
 ---
 
+## 📈 Metrics (Prometheus)
+
+The app exposes Prometheus metrics at `GET /metrics`.
+
+Metrics endpoint is protected with HTTP Basic Auth:
+
+- `METRICS_BASIC_AUTH_USER` (default: `metrics`)
+- `METRICS_BASIC_AUTH_PASS` (default: `metrics`)
+
+Custom metrics currently exposed:
+
+- `cuoph26_attendees_total`
+- `cuoph26_attendees_by_type{attendee_type}`
+- `cuoph26_unique_attendees_checkins_by_date{checkin_date}`
+- `cuoph26_unique_attendees_checkins_by_date_and_type{checkin_date,attendee_type}`
+- `cuoph26_available_pieces_by_faculty{faculty}`
+- `cuoph26_checkins_total`
+- `cuoph26_checkins_by_date{checkin_date}`
+- `cuoph26_requests_per_second`
+- `cuoph26_server_up`
+
+Example `prometheus.yml` scrape config:
+
+```yaml
+scrape_configs:
+  - job_name: "oph26-backend"
+    metrics_path: /metrics
+    basic_auth:
+      username: metrics
+      password: metrics
+    static_configs:
+      - targets: ["localhost:8080"]
+```
+
+---
+
 ## 🔒 Branch Rules for Main
 
 The `main` branch is protected with the following rules:
