@@ -89,10 +89,10 @@ func SetupRoutes(r *fiber.App, c RouteConfig) {
 			stats.Get("/stats/pieces/available_by_faculty", c.StatsUsecase.GetCountAvailablePiecesGroupedByFacultyStats)
 		}
 
-		questionaires := api.Group("/questionnaires", c.AuthMiddleware)
+		questionnaires := api.Group("/questionnaires", c.AuthMiddleware)
 		{
-			questionaires.Post("/me", c.QuestionnaireUsecase.CreateQuestionnaire)
-			questionaires.Get("/me", c.QuestionnaireUsecase.GetQuestionnaire)
+			questionnaires.Post("/me", c.QuestionnaireUsecase.CreateQuestionnaire)
+			questionnaires.Get("/me", c.QuestionnaireUsecase.GetQuestionnaire)
 		}
 	}
 }
