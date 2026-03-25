@@ -39,7 +39,6 @@ func (u *questionnaireUsecase) CreateQuestionnaire(c *fiber.Ctx) error {
 	}
 
 	q := &entity.Questionnaire{
-		ID:      userID,
 		UserID:  userID.String(),
 		Answers: answers,
 	}
