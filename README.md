@@ -103,7 +103,7 @@ Custom metrics currently exposed:
 - `cuoph26_checkins_by_faculty{faculty}`
 - `cuoph26_checkins_by_staff{staff}`
 - `cuoph26_checkins_by_hour_and_faculty{hour_bucket,faculty}`
-- `cuoph26_unique_attendees_checked_in_today`
+- `cuoph26_unique_attendees_total`
 - `cuoph26_duplicate_checkins_today`
 - `cuoph26_attendees_with_completed_pieces`
 - `cuoph26_total_collected_pieces`

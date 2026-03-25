@@ -18,7 +18,7 @@ type StatsRepository interface {
 	CountCheckinsGroupedByStaff() (map[string]int64, error)
 	CountCheckinsGroupedByHourAndFacultySince(since time.Time) (map[string]map[string]int64, error)
 	CountUniqueAttendeesCheckinsGroupedByDate() (map[string]int64, error)
-	CountUniqueAttendeesCheckedInToday() (int64, error)
+	CountUniqueAttendeesTotal() (int64, error)
 	CountDuplicateCheckinsToday() (int64, error)
 	CountAvailablePiecesGroupedByFaculty() (map[string]int64, error)
 	CountAttendeeWithCompletedPieces() (int64, error)
@@ -222,7 +222,7 @@ func (r *StatsRepositoryImpl) CountUniqueAttendeesCheckinsGroupedByDate() (map[s
 	return counts, nil
 }
 
-func (r *StatsRepositoryImpl) CountUniqueAttendeesCheckedInToday() (int64, error) {
+func (r *StatsRepositoryImpl) CountUniqueAttendeesTotal() (int64, error) {
 	type Result struct {
 		Count int64
 	}
@@ -230,7 +230,6 @@ func (r *StatsRepositoryImpl) CountUniqueAttendeesCheckedInToday() (int64, error
 	var result Result
 	err := r.DB.Model(&entity.Checkin{}).
 		Select("COUNT(DISTINCT attendee_id) AS count").
-		Where("DATE(checked_in_at) = CURRENT_DATE").
 		Scan(&result).Error
 	if err != nil {
 		return 0, err

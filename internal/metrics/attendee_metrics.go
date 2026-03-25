@@ -20,7 +20,7 @@ type AttendeeMetrics struct {
 	checkinsByFaculty                    *prometheus.GaugeVec
 	checkinsByStaff                      *prometheus.GaugeVec
 	checkinsByHourAndFaculty             *prometheus.GaugeVec
-	uniqueAttendeesCheckedInToday        prometheus.Gauge
+	uniqueAttendeesTotal                 prometheus.Gauge
 	duplicateCheckinsToday               prometheus.Gauge
 	attendeesWithCompletedPieces         prometheus.Gauge
 	totalCollectedPieces                 prometheus.Gauge
@@ -107,10 +107,10 @@ func NewAttendeeMetrics(statsRepo repository.StatsRepository) *AttendeeMetrics {
 		[]string{"hour_bucket", "faculty"},
 	)
 
-	uniqueAttendeesCheckedInToday := prometheus.NewGauge(
+	uniqueAttendeesTotal := prometheus.NewGauge(
 		prometheus.GaugeOpts{
-			Name: "cuoph26_unique_attendees_checked_in_today",
-			Help: "Unique attendees checked in today",
+			Name: "cuoph26_unique_attendees_total",
+			Help: "Total unique attendees who have ever checked in",
 		},
 	)
 
@@ -161,7 +161,7 @@ func NewAttendeeMetrics(statsRepo repository.StatsRepository) *AttendeeMetrics {
 		checkinsByFaculty,
 		checkinsByStaff,
 		checkinsByHourAndFaculty,
-		uniqueAttendeesCheckedInToday,
+		uniqueAttendeesTotal,
 		duplicateCheckinsToday,
 		attendeesWithCompletedPieces,
 		totalCollectedPieces,
@@ -182,7 +182,7 @@ func NewAttendeeMetrics(statsRepo repository.StatsRepository) *AttendeeMetrics {
 		checkinsByFaculty:                    checkinsByFaculty,
 		checkinsByStaff:                      checkinsByStaff,
 		checkinsByHourAndFaculty:             checkinsByHourAndFaculty,
-		uniqueAttendeesCheckedInToday:        uniqueAttendeesCheckedInToday,
+		uniqueAttendeesTotal:                 uniqueAttendeesTotal,
 		duplicateCheckinsToday:               duplicateCheckinsToday,
 		attendeesWithCompletedPieces:         attendeesWithCompletedPieces,
 		totalCollectedPieces:                 totalCollectedPieces,
@@ -284,11 +284,11 @@ func (m *AttendeeMetrics) Refresh() error {
 		}
 	}
 
-	uniqueToday, err := m.statsRepo.CountUniqueAttendeesCheckedInToday()
+	uniqueTotal, err := m.statsRepo.CountUniqueAttendeesTotal()
 	if err != nil {
 		return err
 	}
-	m.uniqueAttendeesCheckedInToday.Set(float64(uniqueToday))
+	m.uniqueAttendeesTotal.Set(float64(uniqueTotal))
 
 	duplicateToday, err := m.statsRepo.CountDuplicateCheckinsToday()
 	if err != nil {
