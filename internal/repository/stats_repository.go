@@ -4,6 +4,7 @@ import (
 	"oph26-backend/internal/entity"
 	"time"
 
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
@@ -21,6 +22,11 @@ type StatsRepository interface {
 	CountDuplicateCheckinsToday() (int64, error)
 	CountAvailablePiecesGroupedByFaculty() (map[string]int64, error)
 	CountAttendeeWithCompletedPieces() (int64, error)
+	CountTotalCollectedPieces() (int64, error)
+	CountMyPiecesGroupedByFaculty() (map[string]int64, error)
+	GetMostCollectedPieces(limit int) ([]map[string]interface{}, error)
+	CountCollectedPiecesGroupedByAttendee() (map[string]int64, error)
+	GetMaxPiecesCollectedByOneAttendee() (int64, error)
 }
 
 type StatsRepositoryImpl struct {
@@ -295,4 +301,109 @@ func (r *StatsRepositoryImpl) CountAttendeeWithCompletedPieces() (int64, error) 
 	}
 
 	return result.Count, nil
+}
+
+func (r *StatsRepositoryImpl) CountTotalCollectedPieces() (int64, error) {
+	var count int64
+	err := r.DB.Model(&entity.CollectedPiece{}).Count(&count).Error
+	return count, err
+}
+
+func (r *StatsRepositoryImpl) CountMyPiecesGroupedByFaculty() (map[string]int64, error) {
+	type Result struct {
+		Faculty string
+		Count   int64
+	}
+
+	var results []Result
+	err := r.DB.Model(&entity.MyPiece{}).
+		Select("attendees.initial_first_interested_faculty AS faculty, COUNT(*) AS count").
+		Joins("JOIN attendees ON attendees.id = my_pieces.attendee_id").
+		Group("faculty").
+		Order("faculty").
+		Scan(&results).Error
+
+	if err != nil {
+		return nil, err
+	}
+
+	counts := make(map[string]int64)
+	for _, res := range results {
+		counts[res.Faculty] = res.Count
+	}
+	return counts, nil
+}
+
+func (r *StatsRepositoryImpl) GetMostCollectedPieces(limit int) ([]map[string]interface{}, error) {
+	type Result struct {
+		PieceID uuid.UUID
+		Count   int64
+	}
+
+	var results []Result
+	err := r.DB.Model(&entity.CollectedPiece{}).
+		Select("piece_id, COUNT(*) AS count").
+		Group("piece_id").
+		Order("count DESC").
+		Limit(limit).
+		Scan(&results).Error
+
+	if err != nil {
+		return nil, err
+	}
+
+	var pieces []map[string]interface{}
+	for _, res := range results {
+		pieces = append(pieces, map[string]interface{}{
+			"piece_id": res.PieceID.String(),
+			"count":    res.Count,
+		})
+	}
+	return pieces, nil
+}
+
+func (r *StatsRepositoryImpl) CountCollectedPiecesGroupedByAttendee() (map[string]int64, error) {
+	type Result struct {
+		AttendeeID uuid.UUID
+		Count      int64
+	}
+
+	var results []Result
+	err := r.DB.Model(&entity.CollectedPiece{}).
+		Select("attendee_id, COUNT(*) AS count").
+		Group("attendee_id").
+		Order("attendee_id").
+		Scan(&results).Error
+
+	if err != nil {
+		return nil, err
+	}
+
+	counts := make(map[string]int64)
+	for _, res := range results {
+		counts[res.AttendeeID.String()] = res.Count
+	}
+	return counts, nil
+}
+
+func (r *StatsRepositoryImpl) GetMaxPiecesCollectedByOneAttendee() (int64, error) {
+	type Result struct {
+		MaxCount int64 `gorm:"column:max_count"`
+	}
+
+	var result Result
+	err := r.DB.Raw(`
+		SELECT COALESCE(MAX(piece_count), 0) AS max_count
+		FROM (
+			SELECT COUNT(*) AS piece_count
+			FROM collected_pieces
+			GROUP BY attendee_id
+		) subquery
+	`).Scan(&result).Error
+
+	if err != nil {
+		return 0, err
+	}
+
+	return result.MaxCount, nil
 }

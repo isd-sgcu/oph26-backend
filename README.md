@@ -105,6 +105,10 @@ Custom metrics currently exposed:
 - `cuoph26_checkins_by_hour_and_faculty{hour_bucket,faculty}`
 - `cuoph26_unique_attendees_checked_in_today`
 - `cuoph26_duplicate_checkins_today`
+- `cuoph26_attendees_with_completed_pieces`
+- `cuoph26_total_collected_pieces`
+- `cuoph26_my_pieces_by_faculty{faculty}`
+- `cuoph26_max_pieces_collected_by_one_attendee`
 - `cuoph26_requests_per_second`
 - `cuoph26_server_up`
 

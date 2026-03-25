@@ -23,6 +23,9 @@ type AttendeeMetrics struct {
 	uniqueAttendeesCheckedInToday        prometheus.Gauge
 	duplicateCheckinsToday               prometheus.Gauge
 	attendeesWithCompletedPieces         prometheus.Gauge
+	totalCollectedPieces                 prometheus.Gauge
+	myPiecesGroupedByFaculty             *prometheus.GaugeVec
+	maxPiecesCollectedByOneAttendee      prometheus.Gauge
 }
 
 func NewAttendeeMetrics(statsRepo repository.StatsRepository) *AttendeeMetrics {
@@ -125,6 +128,28 @@ func NewAttendeeMetrics(statsRepo repository.StatsRepository) *AttendeeMetrics {
 		},
 	)
 
+	totalCollectedPieces := prometheus.NewGauge(
+		prometheus.GaugeOpts{
+			Name: "cuoph26_total_collected_pieces",
+			Help: "Total number of pieces collected by all attendees",
+		},
+	)
+
+	myPiecesGroupedByFaculty := prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "cuoph26_my_pieces_by_faculty",
+			Help: "Total pieces (MyPieces) available grouped by faculty",
+		},
+		[]string{"faculty"},
+	)
+
+	maxPiecesCollectedByOneAttendee := prometheus.NewGauge(
+		prometheus.GaugeOpts{
+			Name: "cuoph26_max_pieces_collected_by_one_attendee",
+			Help: "Maximum number of pieces collected by a single attendee",
+		},
+	)
+
 	prometheus.MustRegister(
 		attendeesByType,
 		attendeesTotal,
@@ -139,6 +164,9 @@ func NewAttendeeMetrics(statsRepo repository.StatsRepository) *AttendeeMetrics {
 		uniqueAttendeesCheckedInToday,
 		duplicateCheckinsToday,
 		attendeesWithCompletedPieces,
+		totalCollectedPieces,
+		myPiecesGroupedByFaculty,
+		maxPiecesCollectedByOneAttendee,
 	)
 
 	return &AttendeeMetrics{
@@ -157,6 +185,9 @@ func NewAttendeeMetrics(statsRepo repository.StatsRepository) *AttendeeMetrics {
 		uniqueAttendeesCheckedInToday:        uniqueAttendeesCheckedInToday,
 		duplicateCheckinsToday:               duplicateCheckinsToday,
 		attendeesWithCompletedPieces:         attendeesWithCompletedPieces,
+		totalCollectedPieces:                 totalCollectedPieces,
+		myPiecesGroupedByFaculty:             myPiecesGroupedByFaculty,
+		maxPiecesCollectedByOneAttendee:      maxPiecesCollectedByOneAttendee,
 	}
 }
 
@@ -270,6 +301,27 @@ func (m *AttendeeMetrics) Refresh() error {
 		return err
 	}
 	m.attendeesWithCompletedPieces.Set(float64(attendeesWithCompletedPieces))
+
+	totalCollected, err := m.statsRepo.CountTotalCollectedPieces()
+	if err != nil {
+		return err
+	}
+	m.totalCollectedPieces.Set(float64(totalCollected))
+
+	myPiecesGroupedByFacultyData, err := m.statsRepo.CountMyPiecesGroupedByFaculty()
+	if err != nil {
+		return err
+	}
+	m.myPiecesGroupedByFaculty.Reset()
+	for faculty, count := range myPiecesGroupedByFacultyData {
+		m.myPiecesGroupedByFaculty.WithLabelValues(faculty).Set(float64(count))
+	}
+
+	maxPiecesCollected, err := m.statsRepo.GetMaxPiecesCollectedByOneAttendee()
+	if err != nil {
+		return err
+	}
+	m.maxPiecesCollectedByOneAttendee.Set(float64(maxPiecesCollected))
 
 	return nil
 }
