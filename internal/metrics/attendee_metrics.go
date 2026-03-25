@@ -2,6 +2,7 @@ package metrics
 
 import (
 	"oph26-backend/internal/repository"
+	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 )
@@ -16,6 +17,13 @@ type AttendeeMetrics struct {
 	uniqueAttendeesCheckinsByDateAndType *prometheus.GaugeVec
 	checkinsTotal                        prometheus.Gauge
 	checkinsByDate                       *prometheus.GaugeVec
+	checkinsByFaculty                    *prometheus.GaugeVec
+	checkinsByStaff                      *prometheus.GaugeVec
+	checkinsByHourAndFaculty             *prometheus.GaugeVec
+	checkinsLast5m                       prometheus.Gauge
+	checkinsLast15m                      prometheus.Gauge
+	uniqueAttendeesCheckedInToday        prometheus.Gauge
+	duplicateCheckinsToday               prometheus.Gauge
 }
 
 func NewAttendeeMetrics(statsRepo repository.StatsRepository) *AttendeeMetrics {
@@ -73,6 +81,58 @@ func NewAttendeeMetrics(statsRepo repository.StatsRepository) *AttendeeMetrics {
 		[]string{"checkin_date"},
 	)
 
+	checkinsByFaculty := prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "cuoph26_checkins_by_faculty",
+			Help: "Current total checkins grouped by faculty",
+		},
+		[]string{"faculty"},
+	)
+
+	checkinsByStaff := prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "cuoph26_checkins_by_staff",
+			Help: "Current total checkins grouped by staff",
+		},
+		[]string{"staff"},
+	)
+
+	checkinsByHourAndFaculty := prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "cuoph26_checkins_by_hour_and_faculty",
+			Help: "Current total checkins grouped by hour bucket and faculty",
+		},
+		[]string{"hour_bucket", "faculty"},
+	)
+
+	checkinsLast5m := prometheus.NewGauge(
+		prometheus.GaugeOpts{
+			Name: "cuoph26_checkins_last_5m",
+			Help: "Number of checkins in the last 5 minutes",
+		},
+	)
+
+	checkinsLast15m := prometheus.NewGauge(
+		prometheus.GaugeOpts{
+			Name: "cuoph26_checkins_last_15m",
+			Help: "Number of checkins in the last 15 minutes",
+		},
+	)
+
+	uniqueAttendeesCheckedInToday := prometheus.NewGauge(
+		prometheus.GaugeOpts{
+			Name: "cuoph26_unique_attendees_checked_in_today",
+			Help: "Unique attendees checked in today",
+		},
+	)
+
+	duplicateCheckinsToday := prometheus.NewGauge(
+		prometheus.GaugeOpts{
+			Name: "cuoph26_duplicate_checkins_today",
+			Help: "Duplicate checkins today (total checkins today - unique attendees checked in today)",
+		},
+	)
+
 	prometheus.MustRegister(
 		attendeesByType,
 		attendeesTotal,
@@ -81,6 +141,13 @@ func NewAttendeeMetrics(statsRepo repository.StatsRepository) *AttendeeMetrics {
 		uniqueAttendeesCheckinsByDateAndType,
 		checkinsTotal,
 		checkinsByDate,
+		checkinsByFaculty,
+		checkinsByStaff,
+		checkinsByHourAndFaculty,
+		checkinsLast5m,
+		checkinsLast15m,
+		uniqueAttendeesCheckedInToday,
+		duplicateCheckinsToday,
 	)
 
 	return &AttendeeMetrics{
@@ -93,6 +160,13 @@ func NewAttendeeMetrics(statsRepo repository.StatsRepository) *AttendeeMetrics {
 		uniqueAttendeesCheckinsByDateAndType: uniqueAttendeesCheckinsByDateAndType,
 		checkinsTotal:                        checkinsTotal,
 		checkinsByDate:                       checkinsByDate,
+		checkinsByFaculty:                    checkinsByFaculty,
+		checkinsByStaff:                      checkinsByStaff,
+		checkinsByHourAndFaculty:             checkinsByHourAndFaculty,
+		checkinsLast5m:                       checkinsLast5m,
+		checkinsLast15m:                      checkinsLast15m,
+		uniqueAttendeesCheckedInToday:        uniqueAttendeesCheckedInToday,
+		duplicateCheckinsToday:               duplicateCheckinsToday,
 	}
 }
 
@@ -159,6 +233,59 @@ func (m *AttendeeMetrics) Refresh() error {
 	for checkinDate, count := range checkinsByDate {
 		m.checkinsByDate.WithLabelValues(checkinDate).Set(float64(count))
 	}
+
+	checkinsByFaculty, err := m.statsRepo.CountCheckinsGroupedByFaculty()
+	if err != nil {
+		return err
+	}
+	m.checkinsByFaculty.Reset()
+	for faculty, count := range checkinsByFaculty {
+		m.checkinsByFaculty.WithLabelValues(faculty).Set(float64(count))
+	}
+
+	checkinsByStaff, err := m.statsRepo.CountCheckinsGroupedByStaff()
+	if err != nil {
+		return err
+	}
+	m.checkinsByStaff.Reset()
+	for staff, count := range checkinsByStaff {
+		m.checkinsByStaff.WithLabelValues(staff).Set(float64(count))
+	}
+
+	checkinsByHourAndFaculty, err := m.statsRepo.CountCheckinsGroupedByHourAndFacultySince(time.Now().Add(-24 * time.Hour))
+	if err != nil {
+		return err
+	}
+	m.checkinsByHourAndFaculty.Reset()
+	for hourBucket, facultyCounts := range checkinsByHourAndFaculty {
+		for faculty, count := range facultyCounts {
+			m.checkinsByHourAndFaculty.WithLabelValues(hourBucket, faculty).Set(float64(count))
+		}
+	}
+
+	checkinsLast5m, err := m.statsRepo.CountCheckinsSince(time.Now().Add(-5 * time.Minute))
+	if err != nil {
+		return err
+	}
+	m.checkinsLast5m.Set(float64(checkinsLast5m))
+
+	checkinsLast15m, err := m.statsRepo.CountCheckinsSince(time.Now().Add(-15 * time.Minute))
+	if err != nil {
+		return err
+	}
+	m.checkinsLast15m.Set(float64(checkinsLast15m))
+
+	uniqueToday, err := m.statsRepo.CountUniqueAttendeesCheckedInToday()
+	if err != nil {
+		return err
+	}
+	m.uniqueAttendeesCheckedInToday.Set(float64(uniqueToday))
+
+	duplicateToday, err := m.statsRepo.CountDuplicateCheckinsToday()
+	if err != nil {
+		return err
+	}
+	m.duplicateCheckinsToday.Set(float64(duplicateToday))
 
 	return nil
 }
