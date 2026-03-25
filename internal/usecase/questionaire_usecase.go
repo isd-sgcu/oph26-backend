@@ -44,6 +44,16 @@ func (u *questionnaireUsecase) CreateQuestionnaire(c *fiber.Ctx) error {
 		Answers: answers,
 	}
 
+	if exists, err := u.repo.ExistsByUserID(userID.String()); err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": err.Error(),
+		})
+	} else if exists {
+		return c.Status(fiber.StatusConflict).JSON(fiber.Map{
+			"error": "Questionnaire already exists for this user",
+		})
+	}
+
 	questionnaire, err := u.repo.Create(q)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
