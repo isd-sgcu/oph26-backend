@@ -71,20 +71,25 @@ func main() {
 	statsRepo := repository.NewStatsRepository(config.DB)
 	statsUsecase := usecase.NewStatsUsecase(statsRepo)
 
+	// Questionnaire
+	questionnaireRepo := repository.NewQuestionnaireRepository(config.DB)
+	questionnaireUsecase := usecase.NewQuestionnaireUsecase(questionnaireRepo)
+
 	// Init Middleware
 	authMiddleware := middleware.NewAuthMiddleware(cfg.JWTSecret)
 	rateLimitMiddleware := middleware.RateLimitMiddleware(10, time.Minute) // 10 requests per minute
 
 	route.SetupRoutes(r, route.RouteConfig{
-		AuthUsecase:         authUsecase,
-		AttendeeUsecase:     attendeeUsecase,
-		CheckinUsecase:      checkinUsecase,
-		AuthMiddleware:      authMiddleware,
-		UserUsecase:         userUsecase,
-		PieceUsecase:        pieceUsecase,
-		StatsUsecase:        statsUsecase,
-		RateLimitMiddleware: rateLimitMiddleware,
-		LeaderboardUsecase:  leaderboardUsecase,
+		AuthUsecase:          authUsecase,
+		AttendeeUsecase:      attendeeUsecase,
+		CheckinUsecase:       checkinUsecase,
+		AuthMiddleware:       authMiddleware,
+		UserUsecase:          userUsecase,
+		PieceUsecase:         pieceUsecase,
+		StatsUsecase:         statsUsecase,
+		RateLimitMiddleware:  rateLimitMiddleware,
+		LeaderboardUsecase:   leaderboardUsecase,
+		QuestionnaireUsecase: questionnaireUsecase,
 	})
 
 	log.Fatal(r.Listen(":" + cfg.Port))
