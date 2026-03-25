@@ -21,8 +21,7 @@ type StatsRepository interface {
 	CountUniqueAttendeesCheckedInToday() (int64, error)
 	CountDuplicateCheckinsToday() (int64, error)
 	CountAvailablePiecesGroupedByFaculty() (map[string]int64, error)
-	// Umm should we implement these?
-	// CountAttendeeWithFullyCollectedPieces() (int64, error)
+	CountAttendeeWithCompletedPieces() (int64, error)
 }
 
 type StatsRepositoryImpl struct {
@@ -287,4 +286,22 @@ func (r *StatsRepositoryImpl) CountAvailablePiecesGroupedByFaculty() (map[string
 		counts[res.Faculty] = res.Count
 	}
 	return counts, nil
+}
+
+func (r *StatsRepositoryImpl) CountAttendeeWithCompletedPieces() (int64, error) {
+	type Result struct {
+		Count int64
+	}
+
+	// if Rank is not null, it means the attendee has completed all pieces
+	var result Result
+	err := r.DB.Model(&entity.Attendee{}).
+		Select("COUNT(*) AS count").
+		Where("rank >= 0").
+		Scan(&result).Error
+	if err != nil {
+		return 0, err
+	}
+
+	return result.Count, nil
 }

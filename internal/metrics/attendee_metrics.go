@@ -24,6 +24,7 @@ type AttendeeMetrics struct {
 	checkinsLast15m                      prometheus.Gauge
 	uniqueAttendeesCheckedInToday        prometheus.Gauge
 	duplicateCheckinsToday               prometheus.Gauge
+	attendeesWithCompletedPieces         prometheus.Gauge
 }
 
 func NewAttendeeMetrics(statsRepo repository.StatsRepository) *AttendeeMetrics {
@@ -133,6 +134,13 @@ func NewAttendeeMetrics(statsRepo repository.StatsRepository) *AttendeeMetrics {
 		},
 	)
 
+	attendeesWithCompletedPieces := prometheus.NewGauge(
+		prometheus.GaugeOpts{
+			Name: "cuoph26_attendees_with_completed_pieces",
+			Help: "Number of attendees who have completed all pieces",
+		},
+	)
+
 	prometheus.MustRegister(
 		attendeesByType,
 		attendeesTotal,
@@ -148,6 +156,7 @@ func NewAttendeeMetrics(statsRepo repository.StatsRepository) *AttendeeMetrics {
 		checkinsLast15m,
 		uniqueAttendeesCheckedInToday,
 		duplicateCheckinsToday,
+		attendeesWithCompletedPieces,
 	)
 
 	return &AttendeeMetrics{
@@ -167,6 +176,7 @@ func NewAttendeeMetrics(statsRepo repository.StatsRepository) *AttendeeMetrics {
 		checkinsLast15m:                      checkinsLast15m,
 		uniqueAttendeesCheckedInToday:        uniqueAttendeesCheckedInToday,
 		duplicateCheckinsToday:               duplicateCheckinsToday,
+		attendeesWithCompletedPieces:         attendeesWithCompletedPieces,
 	}
 }
 
@@ -286,6 +296,12 @@ func (m *AttendeeMetrics) Refresh() error {
 		return err
 	}
 	m.duplicateCheckinsToday.Set(float64(duplicateToday))
+
+	attendeesWithCompletedPieces, err := m.statsRepo.CountAttendeeWithCompletedPieces()
+	if err != nil {
+		return err
+	}
+	m.attendeesWithCompletedPieces.Set(float64(attendeesWithCompletedPieces))
 
 	return nil
 }
