@@ -2,6 +2,8 @@
 package usecase
 
 import (
+	"encoding/json"
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 	"gorm.io/datatypes"
@@ -31,12 +33,29 @@ func (u *questionnaireUsecase) CreateQuestionnaire(c *fiber.Ctx) error {
 		})
 	}
 
-	var answers datatypes.JSON
-	if err := c.BodyParser(&answers); err != nil {
+	var payload any
+	if err := json.Unmarshal(c.Body(), &payload); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "Invalid request body",
 		})
 	}
+
+	switch payload.(type) {
+	case map[string]any:
+	default:
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid request body",
+		})
+	}
+
+	answersBytes, err := json.Marshal(payload)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid request body",
+		})
+	}
+
+	answers := datatypes.JSON(answersBytes)
 
 	q := &entity.Questionnaire{
 		UserID:  userID.String(),
