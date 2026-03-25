@@ -9,15 +9,16 @@ import (
 )
 
 type RouteConfig struct {
-	AuthUsecase         usecase.AuthUsecase
-	AttendeeUsecase     usecase.AttendeeUsecase
-	CheckinUsecase      usecase.CheckinUsecase
-	PieceUsecase        usecase.PieceUsecase
-	UserUsecase         usecase.UserUsecase
-	LeaderboardUsecase  usecase.LeaderboardUsecase
-	StatsUsecase        usecase.StatsUsecase
-	AuthMiddleware      fiber.Handler
-	RateLimitMiddleware fiber.Handler
+	AuthUsecase          usecase.AuthUsecase
+	AttendeeUsecase      usecase.AttendeeUsecase
+	CheckinUsecase       usecase.CheckinUsecase
+	PieceUsecase         usecase.PieceUsecase
+	UserUsecase          usecase.UserUsecase
+	LeaderboardUsecase   usecase.LeaderboardUsecase
+	StatsUsecase         usecase.StatsUsecase
+	QuestionnaireUsecase usecase.QuestionnaireUsecase
+	AuthMiddleware       fiber.Handler
+	RateLimitMiddleware  fiber.Handler
 }
 
 var startTime = time.Now()
@@ -86,6 +87,12 @@ func SetupRoutes(r *fiber.App, c RouteConfig) {
 			stats.Get("/stats/attendees", c.StatsUsecase.GetCountAttendeesStats)
 			stats.Get("/stats/attendees/checkins_by_date", c.StatsUsecase.GetCountUniqueAttendeesCheckinsGroupedByDateStats)
 			stats.Get("/stats/pieces/available_by_faculty", c.StatsUsecase.GetCountAvailablePiecesGroupedByFacultyStats)
+		}
+
+		questionaires := api.Group("/questionnaires", c.AuthMiddleware)
+		{
+			questionaires.Post("/me", c.QuestionnaireUsecase.CreateQuestionnaire)
+			questionaires.Get("/me", c.QuestionnaireUsecase.GetQuestionnaire)
 		}
 	}
 }
