@@ -20,8 +20,6 @@ type AttendeeMetrics struct {
 	checkinsByFaculty                    *prometheus.GaugeVec
 	checkinsByStaff                      *prometheus.GaugeVec
 	checkinsByHourAndFaculty             *prometheus.GaugeVec
-	checkinsLast5m                       prometheus.Gauge
-	checkinsLast15m                      prometheus.Gauge
 	uniqueAttendeesCheckedInToday        prometheus.Gauge
 	duplicateCheckinsToday               prometheus.Gauge
 	attendeesWithCompletedPieces         prometheus.Gauge
@@ -106,20 +104,6 @@ func NewAttendeeMetrics(statsRepo repository.StatsRepository) *AttendeeMetrics {
 		[]string{"hour_bucket", "faculty"},
 	)
 
-	checkinsLast5m := prometheus.NewGauge(
-		prometheus.GaugeOpts{
-			Name: "cuoph26_checkins_last_5m",
-			Help: "Number of checkins in the last 5 minutes",
-		},
-	)
-
-	checkinsLast15m := prometheus.NewGauge(
-		prometheus.GaugeOpts{
-			Name: "cuoph26_checkins_last_15m",
-			Help: "Number of checkins in the last 15 minutes",
-		},
-	)
-
 	uniqueAttendeesCheckedInToday := prometheus.NewGauge(
 		prometheus.GaugeOpts{
 			Name: "cuoph26_unique_attendees_checked_in_today",
@@ -152,8 +136,6 @@ func NewAttendeeMetrics(statsRepo repository.StatsRepository) *AttendeeMetrics {
 		checkinsByFaculty,
 		checkinsByStaff,
 		checkinsByHourAndFaculty,
-		checkinsLast5m,
-		checkinsLast15m,
 		uniqueAttendeesCheckedInToday,
 		duplicateCheckinsToday,
 		attendeesWithCompletedPieces,
@@ -172,8 +154,6 @@ func NewAttendeeMetrics(statsRepo repository.StatsRepository) *AttendeeMetrics {
 		checkinsByFaculty:                    checkinsByFaculty,
 		checkinsByStaff:                      checkinsByStaff,
 		checkinsByHourAndFaculty:             checkinsByHourAndFaculty,
-		checkinsLast5m:                       checkinsLast5m,
-		checkinsLast15m:                      checkinsLast15m,
 		uniqueAttendeesCheckedInToday:        uniqueAttendeesCheckedInToday,
 		duplicateCheckinsToday:               duplicateCheckinsToday,
 		attendeesWithCompletedPieces:         attendeesWithCompletedPieces,
@@ -272,18 +252,6 @@ func (m *AttendeeMetrics) Refresh() error {
 			m.checkinsByHourAndFaculty.WithLabelValues(hourBucket, faculty).Set(float64(count))
 		}
 	}
-
-	checkinsLast5m, err := m.statsRepo.CountCheckinsSince(time.Now().Add(-5 * time.Minute))
-	if err != nil {
-		return err
-	}
-	m.checkinsLast5m.Set(float64(checkinsLast5m))
-
-	checkinsLast15m, err := m.statsRepo.CountCheckinsSince(time.Now().Add(-15 * time.Minute))
-	if err != nil {
-		return err
-	}
-	m.checkinsLast15m.Set(float64(checkinsLast15m))
 
 	uniqueToday, err := m.statsRepo.CountUniqueAttendeesCheckedInToday()
 	if err != nil {

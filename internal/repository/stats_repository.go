@@ -12,7 +12,6 @@ type StatsRepository interface {
 	CountAttendeesGroupedByType() (map[string]int64, error)
 	CountUniqueAttendeesCheckinsGroupedByDateAndType() (map[string]map[string]int64, error)
 	CountCheckins() (int64, error)
-	CountCheckinsSince(since time.Time) (int64, error)
 	CountCheckinsGroupedByDate() (map[string]int64, error)
 	CountCheckinsGroupedByFaculty() (map[string]int64, error)
 	CountCheckinsGroupedByStaff() (map[string]int64, error)
@@ -92,14 +91,6 @@ func (r *StatsRepositoryImpl) CountUniqueAttendeesCheckinsGroupedByDateAndType()
 func (r *StatsRepositoryImpl) CountCheckins() (int64, error) {
 	var count int64
 	err := r.DB.Model(&entity.Checkin{}).Count(&count).Error
-	return count, err
-}
-
-func (r *StatsRepositoryImpl) CountCheckinsSince(since time.Time) (int64, error) {
-	var count int64
-	err := r.DB.Model(&entity.Checkin{}).
-		Where("checked_in_at >= ?", since).
-		Count(&count).Error
 	return count, err
 }
 
