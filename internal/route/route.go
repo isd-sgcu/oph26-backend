@@ -3,6 +3,7 @@ package route
 import (
 	"time"
 
+	"github.com/ansrivas/fiberprometheus/v2"
 	"github.com/gofiber/fiber/v2"
 
 	"oph26-backend/internal/usecase"
@@ -24,6 +25,11 @@ type RouteConfig struct {
 var startTime = time.Now()
 
 func SetupRoutes(r *fiber.App, c RouteConfig) {
+	prom := fiberprometheus.New("cuoph26_backend")
+	prom.RegisterAt(r, "/metrics")
+	prom.SetSkipPaths([]string{"/ping", "/healthz", "/test"})
+	r.Use(prom.Middleware)
+
 	r.Get("/healthz", func(c *fiber.Ctx) error {
 		uptime := time.Since(startTime).String()
 		return c.JSON(fiber.Map{
