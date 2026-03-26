@@ -6,8 +6,8 @@ import (
 )
 
 type Score struct {
-	UserID uuid.UUID `gorm:"type:uuid;not null;unique;primaryKey"`
-	User   User
+	UserID  uuid.UUID `gorm:"type:uuid;not null;unique;primaryKey"`
+	User    User
 	Count1  int `gorm:"not null;default:0"`
 	Count2  int `gorm:"not null;default:0"`
 	Count3  int `gorm:"not null;default:0"`

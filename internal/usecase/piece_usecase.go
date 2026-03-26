@@ -288,7 +288,6 @@ func (u *PieceUsecaseImpl) CollectPiece(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
 
-	
 	if attendee.Rank <= 0 {
 		isComplete, err := u.ScoreRepo.IsComplete(userID)
 		if err != nil {

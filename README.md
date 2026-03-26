@@ -82,6 +82,39 @@ Access tokens is valid for 15 minutes, and refresh tokens is valid for 7 days. Y
 
 ---
 
+## 📈 Metrics (Prometheus)
+
+The app exposes Prometheus metrics at `GET /metrics`.
+
+Metrics endpoint is protected with HTTP Basic Auth:
+
+- `METRICS_BASIC_AUTH_USER`
+- `METRICS_BASIC_AUTH_PASS`
+
+Custom metrics currently exposed:
+
+- `cuoph26_attendees_total`
+- `cuoph26_attendees_by_type{attendee_type}`
+- `cuoph26_unique_attendees_checkins_by_date{checkin_date}`
+- `cuoph26_unique_attendees_checkins_by_date_and_type{checkin_date,attendee_type}`
+- `cuoph26_available_pieces_by_faculty{faculty}`
+- `cuoph26_checkins_total`
+- `cuoph26_checkins_by_date{checkin_date}`
+- `cuoph26_checkins_by_faculty{faculty}`
+- `cuoph26_checkins_by_staff{staff}`
+- `cuoph26_checkins_by_hour_and_faculty{hour_bucket,faculty}`
+- `cuoph26_unique_attendees_total`
+- `cuoph26_duplicate_checkins_today`
+- `cuoph26_attendees_with_completed_pieces`
+- `cuoph26_total_collected_pieces`
+- `cuoph26_my_pieces_by_faculty{faculty}`
+- `cuoph26_max_pieces_collected_by_one_attendee`
+- `cuoph26_requests_per_second`
+- `cuoph26_server_up`
+
+
+---
+
 ## 🔒 Branch Rules for Main
 
 The `main` branch is protected with the following rules:

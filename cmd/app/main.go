@@ -4,6 +4,7 @@ import (
 	"log"
 	"oph26-backend/internal/config"
 	"oph26-backend/internal/initializer"
+	"oph26-backend/internal/metrics"
 	"oph26-backend/internal/middleware"
 	"oph26-backend/internal/repository"
 	"oph26-backend/internal/route"
@@ -11,6 +12,7 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/basicauth"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 )
 
@@ -39,6 +41,9 @@ func main() {
 		AllowHeaders:     "Origin,Content-Type,Authorization",
 		AllowCredentials: true,
 	}))
+
+	serverRuntimeMetrics := metrics.NewServerRuntimeMetrics()
+	r.Use(serverRuntimeMetrics.Middleware())
 
 	// User & Staff
 	userRepo := repository.NewUserRepository(config.DB)
@@ -74,22 +79,45 @@ func main() {
 	// Questionnaire
 	questionnaireRepo := repository.NewQuestionnaireRepository(config.DB)
 	questionnaireUsecase := usecase.NewQuestionnaireUsecase(questionnaireRepo)
+	attendeeMetrics := metrics.NewAttendeeMetrics(statsRepo)
+
+	if err := attendeeMetrics.Refresh(); err != nil {
+		log.Printf("initial attendee metrics refresh failed: %v", err)
+	}
+
+	go func() {
+		ticker := time.NewTicker(30 * time.Second)
+		defer ticker.Stop()
+
+		for range ticker.C {
+			if err := attendeeMetrics.Refresh(); err != nil {
+				log.Printf("periodic attendee metrics refresh failed: %v", err)
+			}
+		}
+	}()
 
 	// Init Middleware
 	authMiddleware := middleware.NewAuthMiddleware(cfg.JWTSecret)
 	rateLimitMiddleware := middleware.RateLimitMiddleware(10, time.Minute) // 10 requests per minute
 
+	metricsBasicAuthMiddleware := basicauth.New(basicauth.Config{
+		Users: map[string]string{
+			cfg.MetricsBasicAuthUser: cfg.MetricsBasicAuthPass,
+		},
+	})
+
 	route.SetupRoutes(r, route.RouteConfig{
-		AuthUsecase:          authUsecase,
-		AttendeeUsecase:      attendeeUsecase,
-		CheckinUsecase:       checkinUsecase,
-		AuthMiddleware:       authMiddleware,
-		UserUsecase:          userUsecase,
-		PieceUsecase:         pieceUsecase,
-		StatsUsecase:         statsUsecase,
-		RateLimitMiddleware:  rateLimitMiddleware,
-		LeaderboardUsecase:   leaderboardUsecase,
-		QuestionnaireUsecase: questionnaireUsecase,
+		AuthUsecase:                authUsecase,
+		AttendeeUsecase:            attendeeUsecase,
+		CheckinUsecase:             checkinUsecase,
+		AuthMiddleware:             authMiddleware,
+		UserUsecase:                userUsecase,
+		PieceUsecase:               pieceUsecase,
+		StatsUsecase:               statsUsecase,
+		RateLimitMiddleware:        rateLimitMiddleware,
+		LeaderboardUsecase:         leaderboardUsecase,
+		QuestionnaireUsecase:       questionnaireUsecase,
+		MetricsBasicAuthMiddleware: metricsBasicAuthMiddleware,
 	})
 
 	log.Fatal(r.Listen(":" + cfg.Port))
