@@ -31,7 +31,7 @@ type Attendee struct {
 	ObjectiveOther                *string           `gorm:"type:text"`
 	TicketCode                    string            `gorm:"type:char(7);not null;uniqueIndex"`
 	MyPiece                       *MyPiece
-	CertificateName               *string    `gorm:"type:text"`
+	CertificateName               *string   `gorm:"type:text"`
 	FavoriteWorkshops             StringSet `gorm:"type:text[]"`
 	TransportationMethod          string
 	Rank                          int `gorm:"default:-1"`
