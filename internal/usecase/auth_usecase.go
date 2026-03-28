@@ -3,7 +3,7 @@ package usecase
 import (
 	"context"
 	"fmt"
-	"log"
+	"log/slog"
 	"oph26-backend/internal/entity"
 	"oph26-backend/internal/model"
 	"oph26-backend/internal/repository"
@@ -266,7 +266,7 @@ func (u *AuthUsecaseImpl) validateGoogleToken(ctx context.Context, token string)
 			return nil, fmt.Errorf("(dev) invalid token claims")
 		}
 
-		log.Printf("(dev) bypassing Google token validation, claims: %v", claims)
+		slog.Debug("auth: dev bypass google token", "claims", claims)
 
 		return &idtoken.Payload{
 			Claims: map[string]any{
@@ -428,7 +428,7 @@ func (u *AuthUsecaseImpl) SignOut(c *fiber.Ctx) error {
 	refreshToken := c.Cookies("refresh_token")
 	if refreshToken != "" {
 		if err := u.RefreshTokenRepository.Revoke(refreshToken); err != nil {
-			log.Printf("failed to revoke refresh token: %v", err)
+			slog.Warn("auth: failed to revoke refresh token", "error", err)
 		}
 	}
 

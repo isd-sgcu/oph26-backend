@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"log/slog"
 	"oph26-backend/internal/config"
 	"oph26-backend/internal/initializer"
 	"oph26-backend/internal/metrics"
@@ -9,6 +10,7 @@ import (
 	"oph26-backend/internal/repository"
 	"oph26-backend/internal/route"
 	"oph26-backend/internal/usecase"
+	"os"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -24,13 +26,20 @@ func main() {
 	cfg := config.LoadEnv()
 	config.InitDB(cfg)
 
+	// Structured logging
+	logLevel := slog.LevelInfo
+	if cfg.AppEnv == "development" {
+		logLevel = slog.LevelDebug
+	}
+	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: logLevel})))
+
 	switch cfg.AppEnv {
 	case "production":
-		log.Println("Running in PRODUCTION mode")
+		slog.Info("server starting", "mode", "production")
 	case "development":
-		log.Println("Running in development mode")
+		slog.Info("server starting", "mode", "development")
 	default:
-		log.Printf("Running in unknown mode: %s\n", cfg.AppEnv)
+		slog.Warn("server starting", "mode", cfg.AppEnv)
 	}
 
 	r := fiber.New()
@@ -41,6 +50,8 @@ func main() {
 		AllowHeaders:     "Origin,Content-Type,Authorization",
 		AllowCredentials: true,
 	}))
+
+	r.Use(middleware.NewRequestLogger())
 
 	serverRuntimeMetrics := metrics.NewServerRuntimeMetrics()
 	r.Use(serverRuntimeMetrics.Middleware())
@@ -82,7 +93,7 @@ func main() {
 	attendeeMetrics := metrics.NewAttendeeMetrics(statsRepo)
 
 	if err := attendeeMetrics.Refresh(); err != nil {
-		log.Printf("initial attendee metrics refresh failed: %v", err)
+		slog.Error("initial attendee metrics refresh failed", "error", err)
 	}
 
 	go func() {
@@ -91,7 +102,7 @@ func main() {
 
 		for range ticker.C {
 			if err := attendeeMetrics.Refresh(); err != nil {
-				log.Printf("periodic attendee metrics refresh failed: %v", err)
+				slog.Error("periodic attendee metrics refresh failed", "error", err)
 			}
 		}
 	}()

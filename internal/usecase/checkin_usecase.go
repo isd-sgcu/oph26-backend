@@ -4,6 +4,8 @@ import (
 	checkinModel "oph26-backend/internal/model/checkin"
 	"oph26-backend/internal/repository"
 
+	"log/slog"
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 	"time"
@@ -29,6 +31,7 @@ func NewCheckinUsecase(attendeeRepository repository.AttendeeRepository, staffRe
 }
 
 func (u *CheckinUsecaseImpl) CheckIn(c *fiber.Ctx) error {
+	reqID, _ := c.Locals("request_id").(string)
 	role, _ := c.Locals("role").(string)
 	if role != "staff" {
 		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
@@ -52,12 +55,16 @@ func (u *CheckinUsecaseImpl) CheckIn(c *fiber.Ctx) error {
 
 	attendee, attendeeErr := u.AttendeeRepository.FindByTicketCode(req.TicketCode)
 	if attendeeErr != nil {
+		slog.Error("checkin: failed to find attendee",
+			"req_id", reqID, "ticket_code", req.TicketCode, "error", attendeeErr)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "Failed to find attendee",
 		})
 	}
 
 	if attendee == nil {
+		slog.Warn("checkin: attendee not found",
+			"req_id", reqID, "ticket_code", req.TicketCode, "staff_user_id", userId)
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
 			"error": "Attendee not found",
 		})
@@ -65,6 +72,8 @@ func (u *CheckinUsecaseImpl) CheckIn(c *fiber.Ctx) error {
 
 	staff, staffErr := u.StaffRepository.FindByUserID(userId)
 	if staffErr != nil {
+		slog.Error("checkin: failed to find staff",
+			"req_id", reqID, "staff_user_id", userId, "error", staffErr)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "Failed to find staff information",
 		})
@@ -72,15 +81,25 @@ func (u *CheckinUsecaseImpl) CheckIn(c *fiber.Ctx) error {
 
 	checkins, checkinsFindErr := u.CheckinRepository.FindCheckinByAttendeeAndFaculty(attendee.ID, staff.Faculty)
 	if checkinsFindErr != nil {
+		slog.Error("checkin: failed to query existing checkins",
+			"req_id", reqID, "attendee_id", attendee.ID, "faculty", staff.Faculty, "error", checkinsFindErr)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "Failed to check check-in status",
 		})
 	}
 
-	// There's already a check-in record for this attendee and faculty, so we return a conflict response
-	// The response body is compliant with api-spec.yml definition for CheckinConflictResponse
 	if len(checkins) > 0 {
 		firstCheckin := checkins[0]
+		slog.Warn("checkin: already checked in",
+			"req_id", reqID,
+			"attendee_id", attendee.ID,
+			"ticket_code", req.TicketCode,
+			"faculty", staff.Faculty,
+			"staff_user_id", userId,
+			"existing_checkin_id", firstCheckin.ID,
+			"existing_checked_in_at", firstCheckin.CheckedInAt,
+			"duplicate_count", len(checkins),
+		)
 		conflictResponseBody := checkinModel.CheckinConflictResponse{
 			Error: "Attendee already checked in with this faculty",
 			CheckinResponse: checkinModel.CheckinResponse{
@@ -95,13 +114,22 @@ func (u *CheckinUsecaseImpl) CheckIn(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusConflict).JSON(conflictResponseBody)
 	}
 
-	// Actually create the check-in record since there's no existing record for this attendee and faculty
 	checkinErr := u.CheckinRepository.CreateCheckin(attendee.ID, staff.Faculty, staff.ID)
 	if checkinErr != nil {
+		slog.Error("checkin: failed to create",
+			"req_id", reqID, "attendee_id", attendee.ID, "faculty", staff.Faculty, "error", checkinErr)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "Failed to create check-in",
 		})
 	}
+
+	slog.Info("checkin: success",
+		"req_id", reqID,
+		"attendee_id", attendee.ID,
+		"ticket_code", req.TicketCode,
+		"faculty", staff.Faculty,
+		"staff_user_id", userId,
+	)
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
 		"ok": true,

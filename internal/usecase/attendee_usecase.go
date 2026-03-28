@@ -3,6 +3,7 @@ package usecase
 import (
 	"crypto/rand"
 	"fmt"
+	"log/slog"
 	"math/big"
 	"oph26-backend/internal/entity"
 	"oph26-backend/internal/model"
@@ -160,7 +161,7 @@ func (u *AttendeeUsecaseImpl) PostAttendee(c *fiber.Ctx) error {
 	// Validation
 	validate := validator.New()
 	if err := validate.Struct(request); err != nil {
-		fmt.Println(err)
+		slog.Warn("attendee: validation failed", "error", err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "Fail to validate JSON",
 		})
